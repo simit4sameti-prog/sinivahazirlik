@@ -88,6 +88,15 @@
                     <p class="text-xs text-slate-400">50 Seçkin Soru</p>
                 </div>
             </div>
+            <div onclick="selectCategory('karisik')" id="cat-karisik" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500">
+                    <i class="fas fa-random text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold">Karışık Mod</h3>
+                    <p class="text-xs text-slate-400">Tüm Konular</p>
+                </div>
+            </div>
         </div>
 
         <!-- Geçmiş Sekmesi -->
@@ -117,7 +126,7 @@
         </div>
 
         <div class="flex justify-between items-center mb-4 px-2">
-            <span class="text-sm font-semibold bg-slate-800 px-3 py-1 rounded-lg">Soru: <span id="current-q">1</span>/50</span>
+            <span class="text-sm font-semibold bg-slate-800 px-3 py-1 rounded-lg">Soru: <span id="current-q">1</span>/<span id="total-q">50</span></span>
             <span class="text-sm font-semibold text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-lg">Puan: <span id="score">0</span></span>
         </div>
 
@@ -211,7 +220,7 @@
             ]
         };
 
-        // 50'ye tamamla
+        // 50'ye tamamla (Gerçek uygulamada buraya 100 farklı soru gelir)
         ['tarih', 'cografya'].forEach(cat => {
             while(allQuestions[cat].length < 50) {
                 allQuestions[cat].push({
@@ -222,11 +231,26 @@
             }
         });
 
+        // Karışık mod için havuz oluştur
+        allQuestions.karisik = [...allQuestions.tarih, ...allQuestions.cografya];
+
         let currentCategory = 'tarih';
         let currentIndex = 0;
         let score = 0;
         let adsEnabled = true;
         let history = [];
+        let activeQuestions = [];
+
+        // Karıştırma (Shuffle) Algoritması
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
 
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('-translate-x-full');
@@ -241,15 +265,25 @@
 
         function selectCategory(cat) {
             currentCategory = cat;
-            restartCategory();
-            toggleSidebar();
             
+            // Etiketleri güncelle
             const label = document.getElementById('active-category-label');
-            label.innerText = cat === 'tarih' ? 'TARİH MODU' : 'COĞRAFYA MODU';
-            label.className = `inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-2 ${cat === 'tarih' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`;
+            if(cat === 'tarih') {
+                label.innerText = 'TARİH MODU';
+                label.className = 'inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-2 bg-red-500/20 text-red-400';
+            } else if(cat === 'cografya') {
+                label.innerText = 'COĞRAFYA MODU';
+                label.className = 'inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-2 bg-blue-500/20 text-blue-400';
+            } else {
+                label.innerText = 'KARIŞIK MOD';
+                label.className = 'inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-2 bg-amber-500/20 text-amber-400';
+            }
             
             document.querySelectorAll('.category-card').forEach(el => el.classList.remove('active'));
             document.getElementById(`cat-${cat}`).classList.add('active');
+            
+            restartCategory();
+            toggleSidebar();
         }
 
         function toggleAds() {
@@ -266,20 +300,29 @@
             }
         }
 
+        function restartCategory() {
+            currentIndex = 0;
+            score = 0;
+            // Soruları her seferinde karıştır
+            activeQuestions = shuffle([...allQuestions[currentCategory]]);
+            document.getElementById('finish-modal').classList.add('hidden');
+            document.getElementById('total-q').innerText = activeQuestions.length;
+            updateQuestion();
+        }
+
         function updateQuestion() {
-            const list = allQuestions[currentCategory];
-            if (currentIndex >= list.length) {
+            if (currentIndex >= activeQuestions.length) {
                 showFinishScreen();
                 return;
             }
-            document.getElementById('question-text').innerText = list[currentIndex].text;
+            document.getElementById('question-text').innerText = activeQuestions[currentIndex].text;
             document.getElementById('current-q').innerText = currentIndex + 1;
             document.getElementById('score').innerText = score;
-            document.getElementById('progress').style.width = ((currentIndex + 1) / list.length * 100) + '%';
+            document.getElementById('progress').style.width = ((currentIndex + 1) / activeQuestions.length * 100) + '%';
         }
 
         function handleAnswer(userChoice) {
-            const q = allQuestions[currentCategory][currentIndex];
+            const q = activeQuestions[currentIndex];
             const isCorrect = userChoice === q.answer;
             
             if (adsEnabled) {
@@ -338,6 +381,7 @@
             document.getElementById('result-explanation').innerText = q.explanation;
         }
 
+        // Sonraki soruya geçiş fonksiyonu
         function nextQuestion() {
             document.getElementById('result-modal').classList.add('hidden');
             currentIndex++;
@@ -347,13 +391,6 @@
         function showFinishScreen() {
             document.getElementById('finish-modal').classList.remove('hidden');
             document.getElementById('final-score').innerText = score;
-        }
-
-        function restartCategory() {
-            currentIndex = 0;
-            score = 0;
-            document.getElementById('finish-modal').classList.add('hidden');
-            updateQuestion();
         }
 
         function updateHistoryUI() {
@@ -372,7 +409,10 @@
             `).join('');
         }
 
-        window.onload = updateQuestion;
+        // İlk açılışta tarih kategorisini hazırla
+        window.onload = () => {
+            restartCategory();
+        };
     </script>
 </body>
 </html>
