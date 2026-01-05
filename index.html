@@ -13,7 +13,9 @@
             font-family: 'Outfit', sans-serif;
             background: #0f172a;
             color: white;
-            overflow: hidden;
+            /* Giriş sorununu engellemek için dikey kaydırmaya izin verildi */
+            overflow-x: hidden;
+            overflow-y: auto;
         }
 
         .card-gradient {
@@ -67,14 +69,14 @@
             <button onclick="switchTab('history')" id="tab-history" class="flex-1 py-3 text-sm font-bold border-b-2 border-transparent hover:bg-slate-800/30">Geçmiş</button>
         </div>
 
-        <div id="content-cats" class="flex-1 overflow-y-auto p-4 space-y-4">
+        <div id="content-cats" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
             <div onclick="selectCategory('tarih')" id="cat-tarih" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4 active">
                 <div class="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center text-red-500">
                     <i class="fas fa-landmark text-xl"></i>
                 </div>
                 <div>
                     <h3 class="font-bold">Tarih</h3>
-                    <p class="text-xs text-slate-400">Karma Sınav Soruları</p>
+                    <p class="text-xs text-slate-400">50 Seçkin Soru</p>
                 </div>
             </div>
             <div onclick="selectCategory('cografya')" id="cat-cografya" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4">
@@ -83,7 +85,7 @@
                 </div>
                 <div>
                     <h3 class="font-bold">Coğrafya</h3>
-                    <p class="text-xs text-slate-400">Karma Sınav Soruları</p>
+                    <p class="text-xs text-slate-400">50 Seçkin Soru</p>
                 </div>
             </div>
             <div onclick="selectCategory('karisik')" id="cat-karisik" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4">
@@ -92,7 +94,7 @@
                 </div>
                 <div>
                     <h3 class="font-bold">Karışık Mod</h3>
-                    <p class="text-xs text-slate-400">Tarih + Coğrafya</p>
+                    <p class="text-xs text-slate-400">100 Soru (Tarih + Coğ)</p>
                 </div>
             </div>
         </div>
@@ -104,7 +106,7 @@
     </div>
 
     <!-- Üst Kontrol Barı -->
-    <div class="fixed top-0 w-full p-4 flex justify-between items-center z-50 max-w-5xl">
+    <div class="fixed top-0 w-full p-4 flex justify-between items-center z-50 max-w-5xl mx-auto">
         <button onclick="toggleSidebar()" class="bg-slate-800/80 backdrop-blur p-3 rounded-2xl hover:bg-slate-700 transition-all border border-slate-700">
             <i class="fas fa-bars text-xl text-amber-500"></i>
         </button>
@@ -123,7 +125,7 @@
         </div>
 
         <div class="flex justify-between items-center mb-4 px-2">
-            <span class="text-sm font-semibold bg-slate-800 px-3 py-1 rounded-lg">Soru: <span id="current-q">1</span>/<span id="total-q">--</span></span>
+            <span class="text-sm font-semibold bg-slate-800 px-3 py-1 rounded-lg">Soru: <span id="current-q">1</span>/<span id="total-q">50</span></span>
             <span class="text-sm font-semibold text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-lg">Puan: <span id="score">0</span></span>
         </div>
 
@@ -164,7 +166,7 @@
             <div class="bg-slate-900/50 p-6 rounded-2xl mb-8 border border-slate-700/50">
                 <p id="result-explanation" class="text-slate-300 text-lg leading-relaxed italic"></p>
             </div>
-            <button onclick="nextQuestion()" class="w-full bg-amber-500 text-slate-900 font-extrabold py-4 rounded-2xl hover:bg-amber-400 transition-all shadow-lg shadow-amber-500/20 uppercase tracking-widest">
+            <button id="next-btn" onclick="nextQuestion()" class="w-full bg-amber-500 text-slate-900 font-extrabold py-4 rounded-2xl hover:bg-amber-400 transition-all shadow-lg shadow-amber-500/20 uppercase tracking-widest">
                 SIRADAKİ SORU
             </button>
         </div>
@@ -261,7 +263,10 @@
             return array;
         }
 
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+        function toggleSidebar() { 
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('-translate-x-full'); 
+        }
 
         function switchTab(tab) {
             document.getElementById('content-cats').classList.toggle('hidden', tab !== 'cats');
@@ -278,7 +283,9 @@
             label.className = `inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-2 ${bgClasses[cat]}`;
             
             document.querySelectorAll('.category-card').forEach(el => el.classList.remove('active'));
-            document.getElementById(`cat-${cat}`).classList.add('active');
+            const activeEl = document.getElementById(`cat-${cat}`);
+            if(activeEl) activeEl.classList.add('active');
+            
             restartCategory();
             toggleSidebar();
         }
@@ -288,6 +295,7 @@
             score = 0;
             activeQuestions = shuffle([...allQuestions[currentCategory]]);
             document.getElementById('finish-modal').classList.add('hidden');
+            document.getElementById('result-modal').classList.add('hidden');
             document.getElementById('total-q').innerText = activeQuestions.length;
             updateQuestion();
         }
@@ -298,7 +306,8 @@
                 document.getElementById('final-score').innerText = score;
                 return;
             }
-            document.getElementById('question-text').innerText = activeQuestions[currentIndex].text;
+            const currentQ = activeQuestions[currentIndex];
+            document.getElementById('question-text').innerText = currentQ.text;
             document.getElementById('current-q').innerText = currentIndex + 1;
             document.getElementById('score').innerText = score;
             document.getElementById('progress').style.width = ((currentIndex + 1) / activeQuestions.length * 100) + '%';
@@ -358,9 +367,13 @@
 
         function nextQuestion() {
             // Modalı sakla ve sonraki soruya geç
-            document.getElementById('result-modal').classList.add('hidden');
+            const modal = document.getElementById('result-modal');
+            modal.classList.add('hidden');
             currentIndex++;
-            setTimeout(updateQuestion, 50); // DOM güncellemesi için mikro gecikme
+            // Kısa bir bekleme ile DOM'un temizlendiğinden emin oluyoruz
+            setTimeout(() => {
+                updateQuestion();
+            }, 10);
         }
 
         function toggleAds() {
@@ -390,7 +403,10 @@
             `).join('');
         }
 
-        window.onload = restartCategory;
+        // Sayfa yüklenir yüklenmez başlat
+        window.onload = function() {
+            restartCategory();
+        };
     </script>
 </body>
 </html>
