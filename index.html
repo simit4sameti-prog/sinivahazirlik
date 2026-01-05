@@ -297,7 +297,7 @@
             const overlay = document.getElementById('ad-overlay');
             const timer = document.getElementById('ad-timer');
             overlay.classList.remove('hidden');
-            let time = 2; // Daha hızlı geçiş için 2 sn
+            let time = 2; 
             timer.innerText = time;
             const interval = setInterval(() => {
                 time--;
@@ -349,7 +349,8 @@
 
         function updateHistoryUI() {
             const list = document.getElementById('history-list');
-            document.getElementById('empty-msg').classList.add('hidden');
+            const emptyMsg = document.getElementById('empty-msg');
+            if(emptyMsg) emptyMsg.classList.add('hidden');
             list.innerHTML = history.map(item => `
                 <div class="bg-slate-800 p-3 rounded-xl border-l-4 ${item.isCorrect ? 'border-emerald-500' : 'border-rose-500'} mb-2">
                     <div class="flex justify-between items-center mb-1">
