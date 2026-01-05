@@ -53,7 +53,7 @@
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
 
-    <!-- SOL SİDEBAR (Kategoriler ve Geçmiş) -->
+    <!-- SOL SİDEBAR -->
     <div id="sidebar" class="sidebar fixed top-0 left-0 h-full w-80 z-[60] transform -translate-x-full shadow-2xl flex flex-col">
         <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-900">
             <h2 class="text-xl font-bold text-amber-500">Sınav Paneli</h2>
@@ -62,13 +62,11 @@
             </button>
         </div>
         
-        <!-- Sekme Seçimi -->
         <div class="flex border-b border-slate-700">
             <button onclick="switchTab('cats')" id="tab-cats" class="flex-1 py-3 text-sm font-bold border-b-2 border-amber-500 bg-slate-800/50">Kategoriler</button>
             <button onclick="switchTab('history')" id="tab-history" class="flex-1 py-3 text-sm font-bold border-b-2 border-transparent hover:bg-slate-800/30">Geçmiş</button>
         </div>
 
-        <!-- Kategoriler Sekmesi -->
         <div id="content-cats" class="flex-1 overflow-y-auto p-4 space-y-4">
             <div onclick="selectCategory('tarih')" id="cat-tarih" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4 active">
                 <div class="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center text-red-500">
@@ -76,7 +74,7 @@
                 </div>
                 <div>
                     <h3 class="font-bold">Tarih</h3>
-                    <p class="text-xs text-slate-400">50 Seçkin Soru</p>
+                    <p class="text-xs text-slate-400">Karma Sınav Soruları</p>
                 </div>
             </div>
             <div onclick="selectCategory('cografya')" id="cat-cografya" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4">
@@ -85,7 +83,7 @@
                 </div>
                 <div>
                     <h3 class="font-bold">Coğrafya</h3>
-                    <p class="text-xs text-slate-400">50 Seçkin Soru</p>
+                    <p class="text-xs text-slate-400">Karma Sınav Soruları</p>
                 </div>
             </div>
             <div onclick="selectCategory('karisik')" id="cat-karisik" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4">
@@ -94,12 +92,11 @@
                 </div>
                 <div>
                     <h3 class="font-bold">Karışık Mod</h3>
-                    <p class="text-xs text-slate-400">Tüm Konular</p>
+                    <p class="text-xs text-slate-400">Tüm Konular (Shuffle)</p>
                 </div>
             </div>
         </div>
 
-        <!-- Geçmiş Sekmesi -->
         <div id="content-history" class="hidden flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
             <p id="empty-msg" class="text-center text-slate-500 text-sm mt-10">Henüz soru çözülmedi.</p>
             <div id="history-list"></div>
@@ -126,7 +123,7 @@
         </div>
 
         <div class="flex justify-between items-center mb-4 px-2">
-            <span class="text-sm font-semibold bg-slate-800 px-3 py-1 rounded-lg">Soru: <span id="current-q">1</span>/<span id="total-q">50</span></span>
+            <span class="text-sm font-semibold bg-slate-800 px-3 py-1 rounded-lg">Soru: <span id="current-q">1</span>/<span id="total-q">--</span></span>
             <span class="text-sm font-semibold text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-lg">Puan: <span id="score">0</span></span>
         </div>
 
@@ -153,16 +150,13 @@
     <!-- Reklam Paneli -->
     <div id="ad-overlay" class="ad-overlay fixed inset-0 z-[100] flex flex-col items-center justify-center p-6 hidden">
         <div class="text-center max-w-sm">
-            <div class="mb-6 relative">
-                <i class="fas fa-play-circle text-8xl text-amber-500 pulse"></i>
-            </div>
-            <h2 class="text-3xl font-bold mb-3">Çözüm Hazırlanıyor...</h2>
-            <p class="text-slate-400 mb-8">Kritik sınav ipucunu görmek için kısa bir ara.</p>
+            <i class="fas fa-play-circle text-8xl text-amber-500 pulse mb-6"></i>
+            <h2 class="text-3xl font-bold mb-3">Çözüm Yükleniyor...</h2>
             <div id="ad-timer" class="text-xl font-mono text-white bg-slate-800 w-24 h-24 flex items-center justify-center rounded-full border-4 border-amber-500 mx-auto mb-6">3</div>
         </div>
     </div>
 
-    <!-- Sonuç/Açıklama Modalı -->
+    <!-- Sonuç Modalı -->
     <div id="result-modal" class="ad-overlay fixed inset-0 z-[100] flex flex-col items-center justify-center p-6 hidden">
         <div class="card-gradient p-8 rounded-[2rem] max-w-md w-full text-center border-t-4 shadow-2xl" id="modal-border">
             <div id="result-icon" class="text-6xl mb-4"></div>
@@ -180,59 +174,57 @@
     <div id="finish-modal" class="ad-overlay fixed inset-0 z-[110] flex flex-col items-center justify-center p-6 hidden">
         <div class="card-gradient p-10 rounded-[2.5rem] max-w-md w-full text-center shadow-2xl border border-amber-500/30">
             <i class="fas fa-trophy text-7xl text-amber-500 mb-6"></i>
-            <h2 class="text-3xl font-bold mb-2">Tebrikler!</h2>
-            <p class="text-slate-400 mb-6">Kategoriyi başarıyla tamamladın.</p>
+            <h2 class="text-3xl font-bold mb-2">Harika İş!</h2>
+            <p class="text-slate-400 mb-6">Soru setini başarıyla tamamladın.</p>
             <div class="bg-slate-900 py-4 px-8 rounded-2xl mb-8">
                 <p class="text-slate-500 text-sm uppercase font-bold">Toplam Puan</p>
                 <p id="final-score" class="text-5xl font-black text-amber-500">0</p>
             </div>
             <button onclick="restartCategory()" class="w-full bg-white text-slate-900 font-extrabold py-4 rounded-2xl hover:bg-slate-200 transition-all uppercase tracking-widest">
-                YENİDEN BAŞLA
+                TEKRAR DENE
             </button>
         </div>
     </div>
 
     <script>
-        const allQuestions = {
-            tarih: [
-                { text: "Osmanlı Devleti'nde ilk altın para Fatih Sultan Mehmet döneminde bastırılmıştır.", answer: true, explanation: "Evet, 'Sultani' adı verilen ilk altın para Fatih döneminde basılmıştır." },
-                { text: "Lozan Antlaşması'na göre Boğazlar tamamen Türkiye'nin kontrolüne bırakılmıştır.", answer: false, explanation: "Hayır, Boğazlar ancak 1936 Montrö Boğazlar Sözleşmesi ile tamamen Türkiye'ye geçmiştir." },
-                { text: "İlk Türk İslam devletlerinde hükümdarın çocuklarına 'Tigin' denilirdi.", answer: true, explanation: "Tigin, hükümdarın erkek çocuklarına verilen unvandır." },
-                { text: "İstiklal Marşı, I. İnönü Muharebesi'nden sonra kabul edilmiştir.", answer: true, explanation: "12 Mart 1921'de, I. İnönü zaferinin ardından kabul edilmiştir." },
-                { text: "Orhun Kitabeleri günümüzde Özbekistan sınırları içerisindedir.", answer: false, explanation: "Orhun Kitabeleri günümüzde Moğolistan sınırları içindedir." },
-                { text: "Büyük Selçuklu Devleti, 1071 Malazgirt Savaşı ile Anadolu'nun kapılarını Türklere açmıştır.", answer: true, explanation: "Malazgirt zaferi Anadolu'nun fethi sürecini başlatmıştır." },
-                { text: "Mondros Ateşkes Antlaşması'nın 7. maddesi en tehlikeli maddedir.", answer: true, explanation: "İtilaf devletlerine stratejik noktaları işgal etme hakkı tanıdığı için en tehlikeli maddedir." },
-                { text: "Türk adıyla kurulan ilk devlet Türkiye Cumhuriyeti'dir.", answer: false, explanation: "Hayır, Türk adıyla kurulan ilk devlet Göktürk (Kök Türk) Devleti'dir." },
-                { text: "Erzurum Kongresi, toplanış bakımından bölgesel, aldığı kararlar bakımından ulusaldır.", answer: true, explanation: "Evet, kongrenin temel özelliği budur." },
-                { text: "Osmanlı'da orduyu denetleyen ve adaleti sağlayan kişiye 'Nişancı' denir.", answer: false, explanation: "Hayır, Nişancı iç ve dış yazışmalardan sorumluydu; adalet işlerine Kazasker bakardı." }
-            ],
-            cografya: [
-                { text: "Türkiye'nin en uzun kıyı sınırı Karadeniz Bölgesi'ndedir.", answer: false, explanation: "Hayır, girinti ve çıkıntı fazla olduğu için en uzun kıyı Ege Bölgesi'ndedir." },
-                { text: "Türkiye'de fön rüzgarları en çok Doğu Karadeniz ve Toroslar'da görülür.", answer: true, explanation: "Sıcak ve kuru esen bu rüzgarlar dağ yamaçlarından inerken ısınır." },
-                { text: "Dünyanın en fazla bor rezervine sahip ülkesi Türkiye'dir.", answer: true, explanation: "Türkiye dünya bor rezervlerinin yaklaşık %73'üne sahiptir." },
-                { text: "Türkiye'nin en kuzey noktası Sinop İnceburun'dur.", answer: true, explanation: "Resmi verilere göre en uç kuzey noktamızdır." },
-                { text: " GAP Projesi ile Şanlıurfa'da fındık üretimi yaygınlaşmıştır.", answer: false, explanation: "Hayır, GAP ile Pamuk ve Mısır üretimi artmıştır; fındık Karadeniz iklimine aittir." },
-                { text: "Karstik yer şekilleri en çok Akdeniz Bölgesi'nde yaygındır.", answer: true, explanation: "Kalker (kireç taşı) yapısından dolayı Akdeniz'de yoğun görülür." },
-                { text: "Türkiye'de deprem riskinin en düşük olduğu yer Doğu Anadolu Fay Hattı üzeridir.", answer: false, explanation: "DAF hattı Türkiye'nin en aktif ve riskli fay hatlarından biridir." },
-                { text: "Türkiye'de güneşli gün sayısının en az olduğu bölge Karadeniz'dir.", answer: true, explanation: "Bulutluluk oranının yüksek olması güneşlenme süresini azaltır." },
-                { text: "Kümes hayvancılığı genellikle tüketici nüfusun fazla olduğu büyük şehir çevrelerinde yapılır.", answer: true, explanation: "Pazarlama imkanları ve ulaşım kolaylığı nedeniyle böyledir." },
-                { text: "Türkiye'nin en büyük gölü olan Van Gölü bir karstik göldür.", answer: false, explanation: "Van Gölü, volkanik set gölüdür." }
-            ]
-        };
+        // GERÇEK SINAV SORULARI HAVUZU
+        const rawTarih = [
+            { text: "Osmanlı Devleti'nde ilk altın para Fatih Sultan Mehmet döneminde bastırılmıştır.", answer: true, explanation: "Fatih döneminde 'Sultani' adı verilen ilk altın para basılmıştır." },
+            { text: "Lozan Antlaşması ile Boğazlar Komisyonu tamamen kaldırılmıştır.", answer: false, explanation: "Hayır, komisyon 1936 Montrö Boğazlar Sözleşmesi ile kaldırılmıştır." },
+            { text: "İlk Türk İslam devletlerinde hükümdarın çocuklarına 'Tigin' denilirdi.", answer: true, explanation: "Tigin, İslamiyet öncesi ve ilk İslam devletlerinde hükümdar oğluna verilen unvandır." },
+            { text: "Sivas Kongresi, hem toplanış hem de aldığı kararlar bakımından ulusaldır.", answer: true, explanation: "Erzurum Kongresi bölgesel toplanırken, Sivas her açıdan ulusaldır." },
+            { text: "Anadolu Selçuklu Devleti'nin kurucusu Kutalmışoğlu Süleyman Şah'tır.", answer: true, explanation: "Devlet, 1075 yılında İznik merkezli kurulmuştur." },
+            { text: "Osmanlı Devleti'nde sadrazamın mührüne 'Tuğra' denir.", answer: false, explanation: "Hayır, Tuğra hükümdarın imzasıdır. Sadrazam 'Mühr-ü Hümayun' taşır." },
+            { text: "Uygurlar, Maniheizm dinini benimseyerek yerleşik hayata geçen ilk Türk devletidir.", answer: true, explanation: "Bu din değişikliği tarım ve mimariyi geliştirmiştir." },
+            { text: "Amasya Genelgesi ile Kurtuluş Savaşı'nın amacı, gerekçesi ve yöntemi belirlenmiştir.", answer: true, explanation: "Milli Mücadele'nin ihtilal beyannamesi kabul edilir." },
+            { text: "Kutadgu Bilig, Kaşgarlı Mahmut tarafından yazılmış bir sözlüktür.", answer: false, explanation: "Hayır, Kutadgu Bilig Yusuf Has Hacib'indir. Sözlük olan Divanü Lügati't-Türk'tür." },
+            { text: "Miryokefalon Savaşı ile Anadolu'nun Türk yurdu olduğu kesinleşmiştir.", answer: true, explanation: "Bu savaşa 'Yurt Tutan Savaş' da denilmektedir." },
+            { text: "Tanzimat Fermanı, Padişahın yetkilerini kanun gücüyle sınırlayan ilk belgedir.", answer: true, explanation: "1839'da Abdülmecid döneminde ilan edilmiştir." },
+            { text: "Osmanlı'da 'Şeyhülislam' divan toplantılarına her zaman başkanlık ederdi.", answer: false, explanation: "Hayır, divana Padişah veya Sadrazam başkanlık ederdi." },
+            { text: "Mudanya Ateşkes Antlaşması ile İstanbul ve Boğazlar savaşsız kurtarılmıştır.", answer: true, explanation: "Diplomatik bir zafer olarak kabul edilir." },
+            { text: "Orhun Kitabeleri günümüzde Kırgızistan sınırları içerisindedir.", answer: false, explanation: "Hayır, Moğolistan sınırları içerisindedir." },
+            { text: "Saltanat, 1 Kasım 1922 tarihinde kaldırılmıştır.", answer: true, explanation: "Lozan görüşmeleri öncesinde çift başlılığı önlemek için kaldırılmıştır." }
+        ];
 
-        // 50'ye tamamla (Gerçek uygulamada buraya 100 farklı soru gelir)
-        ['tarih', 'cografya'].forEach(cat => {
-            while(allQuestions[cat].length < 50) {
-                allQuestions[cat].push({
-                    text: `${cat.toUpperCase()} Soru #${allQuestions[cat].length + 1}: KPSS ve YKS sınavlarında bu konu sıkça karşınıza çıkar.`,
-                    answer: Math.random() > 0.5,
-                    explanation: "Bu genel bir bilgidir, kaynak kitaplardaki notlarınızı kontrol etmeyi unutmayın!"
-                });
-            }
-        });
+        const rawCografya = [
+            { text: "Türkiye'nin en uzun kıyı sınırı Karadeniz Bölgesi'ndedir.", answer: false, explanation: "Girinti çıkıntı nedeniyle en uzun kıyı Ege Bölgesi'ndedir." },
+            { text: "Türkiye'de fön rüzgarları en çok Doğu Karadeniz yamaçlarında görülür.", answer: true, explanation: "Dağdan inen hava ısınarak fön karakteri kazanır." },
+            { text: "Dünyanın en fazla bor rezervine sahip ülkesi Türkiye'dir.", answer: true, explanation: "Dünya rezervlerinin yaklaşık %73'ü Türkiye'dedir." },
+            { text: "Türkiye'nin en büyük delta ovası Çukurova'dır.", answer: true, explanation: "Seyhan ve Ceyhan nehirlerinin taşıdığı alüvyonlarla oluşmuştur." },
+            { text: "Van Gölü, suları sodalı olan bir volkanik set gölüdür.", answer: true, explanation: "Nemrut Dağı'ndan çıkan lavların önünü kapatmasıyla oluşmuştur." },
+            { text: "Türkiye'de deprem riski en düşük olan yer Doğu Anadolu Fay Hattı üzeridir.", answer: false, explanation: "DAF, Türkiye'nin en aktif fay hatlarından biridir." },
+            { text: "Akdeniz ikliminin karakteristik bitki örtüsü Makidir.", answer: true, explanation: "Bodur ağaç ve çalılardan oluşan bitki topluluğudur." },
+            { text: "Türkiye'de güneş enerjisinden yararlanma potansiyeli en fazla Karadeniz'dedir.", answer: false, explanation: "Bulutluluk fazla olduğu için Karadeniz en düşük potansiyele sahiptir." },
+            { text: "Afşin-Elbistan, Türkiye'nin en büyük linyit rezervine sahip bölgesidir.", answer: true, explanation: "Kahramanmaraş sınırları içerisindedir." },
+            { text: "Marmara Bölgesi, nüfus yoğunluğunun en fazla olduğu bölgedir.", answer: true, explanation: "Sanayi ve ulaşım imkanları nedeniyle göç alır." },
+            { text: "Tuz Gölü, ilkbaharda yağışlarla alanı en çok genişleyen göldür.", answer: true, explanation: "Derinliği az olduğu için su seviyesi mevsimlik çok değişir." },
+            { text: "Rüzgar erozyonu en çok Karadeniz ve Marmara bölgelerinde görülür.", answer: false, explanation: "Bitki örtüsü cılız olduğu için İç Anadolu ve GGD'de daha yaygındır." },
+            { text: "İzmir-Çeşme, Türkiye'de rüzgar enerjisinin ilk kullanıldığı yerdir.", answer: true, explanation: "İlk rüzgar santrali burada kurulmuştur." },
+            { text: "Bafra ve Çarşamba ovaları Ege bölgesindeki delta ovalarıdır.", answer: false, explanation: "Hayır, bu ovalar Karadeniz'de (Samsun) yer alır." },
+            { text: "Türkiye'de yetiştirilen fındığın tamamı iç piyasada tüketilir.", answer: false, explanation: "Hayır, Türkiye dünyanın en büyük fındık ihracatçısıdır." }
+        ];
 
-        // Karışık mod için havuz oluştur
-        allQuestions.karisik = [...allQuestions.tarih, ...allQuestions.cografya];
+        const allQuestions = { tarih: rawTarih, cografya: rawCografya, karisik: [...rawTarih, ...rawCografya] };
 
         let currentCategory = 'tarih';
         let currentIndex = 0;
@@ -241,20 +233,18 @@
         let history = [];
         let activeQuestions = [];
 
-        // Karıştırma (Shuffle) Algoritması
         function shuffle(array) {
-            let currentIndex = array.length, randomIndex;
-            while (currentIndex != 0) {
-                randomIndex = Math.floor(Math.random() * currentIndex);
-                currentIndex--;
-                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            let m = array.length, t, i;
+            while (m) {
+                i = Math.floor(Math.random() * m--);
+                t = array[m];
+                array[m] = array[i];
+                array[i] = t;
             }
             return array;
         }
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full');
-        }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
         function switchTab(tab) {
             document.getElementById('content-cats').classList.toggle('hidden', tab !== 'cats');
@@ -265,45 +255,20 @@
 
         function selectCategory(cat) {
             currentCategory = cat;
-            
-            // Etiketleri güncelle
             const label = document.getElementById('active-category-label');
-            if(cat === 'tarih') {
-                label.innerText = 'TARİH MODU';
-                label.className = 'inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-2 bg-red-500/20 text-red-400';
-            } else if(cat === 'cografya') {
-                label.innerText = 'COĞRAFYA MODU';
-                label.className = 'inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-2 bg-blue-500/20 text-blue-400';
-            } else {
-                label.innerText = 'KARIŞIK MOD';
-                label.className = 'inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-2 bg-amber-500/20 text-amber-400';
-            }
+            const bgClasses = { tarih: 'bg-red-500/20 text-red-400', cografya: 'bg-blue-500/20 text-blue-400', karisik: 'bg-amber-500/20 text-amber-400' };
+            label.innerText = cat.toUpperCase() + ' MODU';
+            label.className = `inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-2 ${bgClasses[cat]}`;
             
             document.querySelectorAll('.category-card').forEach(el => el.classList.remove('active'));
             document.getElementById(`cat-${cat}`).classList.add('active');
-            
             restartCategory();
             toggleSidebar();
-        }
-
-        function toggleAds() {
-            adsEnabled = !adsEnabled;
-            const btn = document.getElementById('no-ads-btn');
-            if (!adsEnabled) {
-                btn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>REKLAMLAR KAPALI';
-                btn.classList.add('bg-emerald-600', 'text-white');
-                btn.classList.remove('bg-amber-600/10', 'text-amber-500');
-            } else {
-                btn.innerHTML = '<i class="fas fa-bolt mr-2"></i>REKLAMLARI KALDIR';
-                btn.classList.remove('bg-emerald-600', 'text-white');
-                btn.classList.add('bg-amber-600/10', 'text-amber-500');
-            }
         }
 
         function restartCategory() {
             currentIndex = 0;
             score = 0;
-            // Soruları her seferinde karıştır
             activeQuestions = shuffle([...allQuestions[currentCategory]]);
             document.getElementById('finish-modal').classList.add('hidden');
             document.getElementById('total-q').innerText = activeQuestions.length;
@@ -312,7 +277,8 @@
 
         function updateQuestion() {
             if (currentIndex >= activeQuestions.length) {
-                showFinishScreen();
+                document.getElementById('finish-modal').classList.remove('hidden');
+                document.getElementById('final-score').innerText = score;
                 return;
             }
             document.getElementById('question-text').innerText = activeQuestions[currentIndex].text;
@@ -321,43 +287,28 @@
             document.getElementById('progress').style.width = ((currentIndex + 1) / activeQuestions.length * 100) + '%';
         }
 
-        function handleAnswer(userChoice) {
+        function handleAnswer(choice) {
             const q = activeQuestions[currentIndex];
-            const isCorrect = userChoice === q.answer;
-            
-            if (adsEnabled) {
-                showAd(() => showResult(isCorrect, q));
-            } else {
-                showResult(isCorrect, q);
-            }
+            const isCorrect = choice === q.answer;
+            if (adsEnabled) { showAd(() => showResult(isCorrect, q)); } else { showResult(isCorrect, q); }
         }
 
         function showAd(callback) {
             const overlay = document.getElementById('ad-overlay');
             const timer = document.getElementById('ad-timer');
             overlay.classList.remove('hidden');
-            let time = 3;
+            let time = 2; // Daha hızlı geçiş için 2 sn
             timer.innerText = time;
-            
             const interval = setInterval(() => {
                 time--;
                 timer.innerText = time;
-                if (time <= 0) {
-                    clearInterval(interval);
-                    overlay.classList.add('hidden');
-                    callback();
-                }
-            }, 1000);
+                if (time <= 0) { clearInterval(interval); overlay.classList.add('hidden'); callback(); }
+            }, 800);
         }
 
         function showResult(isCorrect, q) {
             if (isCorrect) score++;
-            
-            history.unshift({
-                text: q.text,
-                isCorrect: isCorrect,
-                category: currentCategory
-            });
+            history.unshift({ text: q.text, isCorrect, category: currentCategory });
             updateHistoryUI();
 
             const modal = document.getElementById('result-modal');
@@ -367,52 +318,50 @@
             
             modal.classList.remove('hidden');
             if (isCorrect) {
-                icon.innerHTML = '🎯';
-                title.innerText = 'TEBRİKLER, DOĞRU!';
+                icon.innerHTML = '🎯'; title.innerText = 'DOĞRU!'; 
                 title.className = 'text-2xl font-bold mb-4 text-emerald-400';
                 border.style.borderColor = '#10b981';
             } else {
-                icon.innerHTML = '💡';
-                title.innerText = 'ÖĞRENME FIRSATI!';
+                icon.innerHTML = '💡'; title.innerText = 'BİLGİ NOTU';
                 title.className = 'text-2xl font-bold mb-4 text-amber-500';
                 border.style.borderColor = '#f59e0b';
             }
-            
             document.getElementById('result-explanation').innerText = q.explanation;
         }
 
-        // Sonraki soruya geçiş fonksiyonu
         function nextQuestion() {
             document.getElementById('result-modal').classList.add('hidden');
             currentIndex++;
             updateQuestion();
         }
 
-        function showFinishScreen() {
-            document.getElementById('finish-modal').classList.remove('hidden');
-            document.getElementById('final-score').innerText = score;
+        function toggleAds() {
+            adsEnabled = !adsEnabled;
+            const btn = document.getElementById('no-ads-btn');
+            if (!adsEnabled) {
+                btn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>REKLAMLAR KAPALI';
+                btn.className = "bg-emerald-600 text-white px-5 py-2.5 rounded-2xl text-sm font-bold hover:bg-emerald-500 transition-all";
+            } else {
+                btn.innerHTML = '<i class="fas fa-bolt mr-2"></i>REKLAMLARI KALDIR';
+                btn.className = "bg-amber-600/10 text-amber-500 border border-amber-500/30 px-5 py-2.5 rounded-2xl text-sm font-bold hover:bg-amber-600 transition-all";
+            }
         }
 
         function updateHistoryUI() {
             const list = document.getElementById('history-list');
-            const empty = document.getElementById('empty-msg');
-            if (empty) empty.classList.add('hidden');
-            
+            document.getElementById('empty-msg').classList.add('hidden');
             list.innerHTML = history.map(item => `
                 <div class="bg-slate-800 p-3 rounded-xl border-l-4 ${item.isCorrect ? 'border-emerald-500' : 'border-rose-500'} mb-2">
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-[10px] uppercase font-bold tracking-tighter opacity-50">${item.category}</span>
+                        <span class="text-[10px] uppercase font-bold opacity-50">${item.category}</span>
                         <i class="fas ${item.isCorrect ? 'fa-check text-emerald-500' : 'fa-times text-rose-500'} text-xs"></i>
                     </div>
-                    <p class="text-xs text-slate-300 leading-tight">${item.text}</p>
+                    <p class="text-xs text-slate-200 leading-tight">${item.text}</p>
                 </div>
             `).join('');
         }
 
-        // İlk açılışta tarih kategorisini hazırla
-        window.onload = () => {
-            restartCategory();
-        };
+        window.onload = restartCategory;
     </script>
 </body>
 </html>
