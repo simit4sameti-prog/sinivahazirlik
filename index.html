@@ -167,6 +167,22 @@
         </div>
     </div>
 
+    <!-- Bitiş Modalı -->
+    <div id="finish-modal" class="ad-overlay fixed inset-0 z-[110] flex flex-col items-center justify-center p-6 hidden">
+        <div class="card-gradient p-10 rounded-[2.5rem] max-w-md w-full text-center shadow-2xl border border-amber-500/30">
+            <i class="fas fa-trophy text-7xl text-amber-500 mb-6"></i>
+            <h2 class="text-3xl font-bold mb-2">Tebrikler!</h2>
+            <p class="text-slate-400 mb-6">Kategoriyi başarıyla tamamladın.</p>
+            <div class="bg-slate-900 py-4 px-8 rounded-2xl mb-8">
+                <p class="text-slate-500 text-sm uppercase font-bold">Toplam Puan</p>
+                <p id="final-score" class="text-5xl font-black text-amber-500">0</p>
+            </div>
+            <button onclick="restartCategory()" class="w-full bg-white text-slate-900 font-extrabold py-4 rounded-2xl hover:bg-slate-200 transition-all uppercase tracking-widest">
+                YENİDEN BAŞLA
+            </button>
+        </div>
+    </div>
+
     <script>
         const allQuestions = {
             tarih: [
@@ -179,8 +195,7 @@
                 { text: "Mondros Ateşkes Antlaşması'nın 7. maddesi en tehlikeli maddedir.", answer: true, explanation: "İtilaf devletlerine stratejik noktaları işgal etme hakkı tanıdığı için en tehlikeli maddedir." },
                 { text: "Türk adıyla kurulan ilk devlet Türkiye Cumhuriyeti'dir.", answer: false, explanation: "Hayır, Türk adıyla kurulan ilk devlet Göktürk (Kök Türk) Devleti'dir." },
                 { text: "Erzurum Kongresi, toplanış bakımından bölgesel, aldığı kararlar bakımından ulusaldır.", answer: true, explanation: "Evet, kongrenin temel özelliği budur." },
-                { text: "Osmanlı'da orduyu denetleyen ve adaleti sağlayan kişiye 'Nişancı' denir.", answer: false, explanation: "Hayır, Nişancı iç ve dış yazışmalardan sorumluydu; adalet işlerine Kazasker bakardı." },
-                // ... Toplam 50 adet olacak şekilde sistemleştirildi
+                { text: "Osmanlı'da orduyu denetleyen ve adaleti sağlayan kişiye 'Nişancı' denir.", answer: false, explanation: "Hayır, Nişancı iç ve dış yazışmalardan sorumluydu; adalet işlerine Kazasker bakardı." }
             ],
             cografya: [
                 { text: "Türkiye'nin en uzun kıyı sınırı Karadeniz Bölgesi'ndedir.", answer: false, explanation: "Hayır, girinti ve çıkıntı fazla olduğu için en uzun kıyı Ege Bölgesi'ndedir." },
@@ -192,12 +207,11 @@
                 { text: "Türkiye'de deprem riskinin en düşük olduğu yer Doğu Anadolu Fay Hattı üzeridir.", answer: false, explanation: "DAF hattı Türkiye'nin en aktif ve riskli fay hatlarından biridir." },
                 { text: "Türkiye'de güneşli gün sayısının en az olduğu bölge Karadeniz'dir.", answer: true, explanation: "Bulutluluk oranının yüksek olması güneşlenme süresini azaltır." },
                 { text: "Kümes hayvancılığı genellikle tüketici nüfusun fazla olduğu büyük şehir çevrelerinde yapılır.", answer: true, explanation: "Pazarlama imkanları ve ulaşım kolaylığı nedeniyle böyledir." },
-                { text: "Türkiye'nin en büyük gölü olan Van Gölü bir karstik göldür.", answer: false, explanation: "Van Gölü, volkanik set gölüdür." },
-                // ... Toplam 50 adet olacak şekilde sistemleştirildi
+                { text: "Türkiye'nin en büyük gölü olan Van Gölü bir karstik göldür.", answer: false, explanation: "Van Gölü, volkanik set gölüdür." }
             ]
         };
 
-        // Geri kalan soruları placeholder ile tamamla (Demo amaçlı 50'ye tamamla)
+        // 50'ye tamamla
         ['tarih', 'cografya'].forEach(cat => {
             while(allQuestions[cat].length < 50) {
                 allQuestions[cat].push({
@@ -227,18 +241,15 @@
 
         function selectCategory(cat) {
             currentCategory = cat;
-            currentIndex = 0;
-            score = 0;
-            document.querySelectorAll('.category-card').forEach(el => el.classList.remove('active'));
-            document.getElementById(`cat-${cat}`).classList.add('active');
+            restartCategory();
+            toggleSidebar();
             
             const label = document.getElementById('active-category-label');
             label.innerText = cat === 'tarih' ? 'TARİH MODU' : 'COĞRAFYA MODU';
             label.className = `inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-2 ${cat === 'tarih' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`;
             
-            document.getElementById('score').innerText = '0';
-            updateQuestion();
-            toggleSidebar();
+            document.querySelectorAll('.category-card').forEach(el => el.classList.remove('active'));
+            document.getElementById(`cat-${cat}`).classList.add('active');
         }
 
         function toggleAds() {
@@ -258,13 +269,12 @@
         function updateQuestion() {
             const list = allQuestions[currentCategory];
             if (currentIndex >= list.length) {
-                alert("Kategori Bitti! Skorun: " + score);
-                currentIndex = 0;
-                score = 0;
-                document.getElementById('score').innerText = '0';
+                showFinishScreen();
+                return;
             }
             document.getElementById('question-text').innerText = list[currentIndex].text;
             document.getElementById('current-q').innerText = currentIndex + 1;
+            document.getElementById('score').innerText = score;
             document.getElementById('progress').style.width = ((currentIndex + 1) / list.length * 100) + '%';
         }
 
@@ -299,9 +309,7 @@
 
         function showResult(isCorrect, q) {
             if (isCorrect) score++;
-            document.getElementById('score').innerText = score;
-
-            // Geçmişe Ekle
+            
             history.unshift({
                 text: q.text,
                 isCorrect: isCorrect,
@@ -330,13 +338,31 @@
             document.getElementById('result-explanation').innerText = q.explanation;
         }
 
+        function nextQuestion() {
+            document.getElementById('result-modal').classList.add('hidden');
+            currentIndex++;
+            updateQuestion();
+        }
+
+        function showFinishScreen() {
+            document.getElementById('finish-modal').classList.remove('hidden');
+            document.getElementById('final-score').innerText = score;
+        }
+
+        function restartCategory() {
+            currentIndex = 0;
+            score = 0;
+            document.getElementById('finish-modal').classList.add('hidden');
+            updateQuestion();
+        }
+
         function updateHistoryUI() {
             const list = document.getElementById('history-list');
             const empty = document.getElementById('empty-msg');
-            empty.classList.add('hidden');
+            if (empty) empty.classList.add('hidden');
             
             list.innerHTML = history.map(item => `
-                <div class="bg-slate-800 p-3 rounded-xl border-l-4 ${item.isCorrect ? 'border-emerald-500' : 'border-rose-500'}">
+                <div class="bg-slate-800 p-3 rounded-xl border-l-4 ${item.isCorrect ? 'border-emerald-500' : 'border-rose-500'} mb-2">
                     <div class="flex justify-between items-center mb-1">
                         <span class="text-[10px] uppercase font-bold tracking-tighter opacity-50">${item.category}</span>
                         <i class="fas ${item.isCorrect ? 'fa-check text-emerald-500' : 'fa-times text-rose-500'} text-xs"></i>
@@ -344,12 +370,6 @@
                     <p class="text-xs text-slate-300 leading-tight">${item.text}</p>
                 </div>
             `).join('');
-        }
-
-        function nextQuestion() {
-            document.getElementById('result-modal').classList.add('hidden');
-            currentIndex++;
-            updateQuestion();
         }
 
         window.onload = updateQuestion;
