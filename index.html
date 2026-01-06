@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KPSS & YKS - Doğru mu? Yanlış mı?</title>
+    <title>KPSS & YKS - Akademi Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Leaflet.js CSS ve JS -->
@@ -37,6 +37,11 @@
             border: 2px solid transparent;
         }
 
+        .category-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
         .category-card.active {
             border-color: #f59e0b;
             background: rgba(245, 158, 11, 0.1);
@@ -51,10 +56,6 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         
-        .pulse { animation: pulse-animation 2s infinite; }
-        @keyframes pulse-animation { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-
-        /* Leaflet Harita Konteynırı */
         #leaflet-map {
             height: 60vh;
             width: 100%;
@@ -63,7 +64,6 @@
             background: #0f172a;
         }
 
-        /* Marker Özelleştirme */
         .custom-div-icon {
             background: rgba(245, 158, 11, 0.5);
             border: 2px solid #f59e0b;
@@ -76,16 +76,30 @@
             border-color: white !important;
             box-shadow: 0 0 20px #10b981 !important;
         }
+        
+        .pulse { animation: pulse-animation 2s infinite; }
+        @keyframes pulse-animation { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+        .glass-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #f59e0b;
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center p-4">
+<body class="min-h-screen flex flex-col items-center">
 
     <!-- SOL SİDEBAR -->
     <div id="sidebar" class="sidebar fixed top-0 left-0 h-full w-80 z-[60] transform -translate-x-full shadow-2xl flex flex-col">
         <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-900">
             <div class="flex items-center gap-3">
-                <i class="fas fa-graduation-cap text-amber-500"></i>
-                <h2 class="text-xl font-bold text-white">Sınav Paneli</h2>
+                <i class="fas fa-graduation-cap text-amber-500 text-xl"></i>
+                <h2 class="text-xl font-bold text-white">Akademi Panel</h2>
             </div>
             <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white">
                 <i class="fas fa-times text-2xl"></i>
@@ -98,105 +112,173 @@
         </div>
 
         <div id="content-cats" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-            <div class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-2 mb-2">Bilgi Yarışması</div>
-            <div onclick="selectCategory('tarih')" id="cat-tarih" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4 active">
+            <div onclick="showHome()" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500">
+                    <i class="fas fa-home"></i>
+                </div>
+                <h3 class="font-bold text-sm">Ana Sayfa</h3>
+            </div>
+
+            <div class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-4">Soru Bankası</div>
+            <div onclick="selectCategory('tarih')" id="cat-tarih" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
                 <div class="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center text-red-500">
                     <i class="fas fa-history"></i>
                 </div>
-                <h3 class="font-bold text-sm">Tarih (D/Y)</h3>
+                <h3 class="font-bold text-sm">Tarih</h3>
             </div>
-            <div onclick="selectCategory('cografya')" id="cat-cografya" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4">
+            <div onclick="selectCategory('cografya')" id="cat-cografya" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
                 <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-500">
                     <i class="fas fa-atlas"></i>
                 </div>
-                <h3 class="font-bold text-sm">Coğrafya (D/Y)</h3>
+                <h3 class="font-bold text-sm">Coğrafya</h3>
             </div>
 
-            <div class="text-xs font-bold text-amber-500 uppercase tracking-widest mt-6 mb-2">İnteraktif Harita</div>
-            <div onclick="selectMap('daglar')" id="cat-map-daglar" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4">
-                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-500">
-                    <i class="fas fa-mountain"></i>
-                </div>
+            <div class="text-xs font-bold text-amber-500 uppercase tracking-widest mt-4">Harita Atölyesi</div>
+            <div onclick="selectMap('daglar')" id="cat-map-daglar" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
+                <i class="fas fa-mountain text-emerald-500"></i>
                 <h3 class="font-bold text-sm">Dağlar</h3>
             </div>
-            <div onclick="selectMap('ovalar')" id="cat-map-ovalar" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4">
-                <div class="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center text-orange-500">
-                    <i class="fas fa-border-none"></i>
-                </div>
+            <div onclick="selectMap('ovalar')" id="cat-map-ovalar" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
+                <i class="fas fa-vector-square text-orange-500"></i>
                 <h3 class="font-bold text-sm">Ovalar</h3>
             </div>
-            <div onclick="selectMap('platolar')" id="cat-map-platolar" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4">
-                <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-500">
-                    <i class="fas fa-layer-group"></i>
-                </div>
+            <div onclick="selectMap('platolar')" id="cat-map-platolar" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
+                <i class="fas fa-layer-group text-purple-500"></i>
                 <h3 class="font-bold text-sm">Platolar</h3>
             </div>
-            <div onclick="selectMap('goller')" id="cat-map-goller" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4">
-                <div class="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center text-cyan-500">
-                    <i class="fas fa-tint"></i>
-                </div>
+            <div onclick="selectMap('goller')" id="cat-map-goller" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
+                <i class="fas fa-tint text-cyan-500"></i>
                 <h3 class="font-bold text-sm">Göller</h3>
             </div>
-            <div onclick="selectMap('sehirler')" id="cat-map-sehirler" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4">
-                <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500">
-                    <i class="fas fa-map-marker-alt"></i>
-                </div>
+            <div onclick="selectMap('sehirler')" id="cat-map-sehirler" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
+                <i class="fas fa-map-marker-alt text-amber-500"></i>
                 <h3 class="font-bold text-sm">Şehirler</h3>
             </div>
         </div>
 
         <div id="content-history" class="hidden flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-            <p id="empty-msg" class="text-center text-slate-500 text-sm mt-10">Geçmiş boş.</p>
             <div id="history-list" class="space-y-2"></div>
         </div>
     </div>
 
-    <!-- Üst Kontrol Barı -->
-    <div class="fixed top-0 w-full p-4 flex justify-between items-center z-50 max-w-6xl mx-auto">
-        <button onclick="toggleSidebar()" class="bg-slate-800/90 backdrop-blur p-4 rounded-2xl hover:bg-slate-700 transition-all border border-slate-700 shadow-xl">
+    <!-- Üst Bar -->
+    <div class="fixed top-0 w-full p-4 flex justify-between items-center z-50 max-w-7xl mx-auto">
+        <button onclick="toggleSidebar()" class="bg-slate-800/90 backdrop-blur p-4 rounded-2xl border border-slate-700 shadow-xl">
             <i class="fas fa-bars text-xl text-amber-500"></i>
         </button>
-        <button id="no-ads-btn" onclick="toggleAds()" class="bg-amber-600/10 text-amber-500 border border-amber-500/30 px-6 py-3 rounded-2xl text-sm font-bold hover:bg-amber-600 hover:text-white transition-all shadow-lg">
+        <div class="hidden md:flex gap-4">
+            <div class="bg-slate-800/90 px-6 py-3 rounded-2xl border border-slate-700 flex items-center gap-3">
+                <i class="fas fa-fire text-orange-500"></i>
+                <span class="font-bold">Seri: <span id="streak">0</span></span>
+            </div>
+        </div>
+        <button onclick="toggleAds()" id="no-ads-btn" class="bg-amber-600/10 text-amber-500 border border-amber-500/30 px-6 py-3 rounded-2xl text-sm font-bold shadow-lg">
             <i class="fas fa-bolt mr-2"></i>REKLAMLARI KALDIR
         </button>
     </div>
 
-    <!-- ANA OYUN ALANI (TEST) -->
-    <div id="game-container" class="w-full max-w-lg mt-24">
-        <div class="text-center mb-8">
-            <div id="active-category-label" class="inline-block px-4 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-bold tracking-widest uppercase mb-3">
-                TARİH MODU
+    <!-- 1. ANA PANEL (HOME) -->
+    <div id="home-view" class="w-full max-w-6xl mt-24 px-4 pb-12 animate-in fade-in duration-500">
+        <div class="text-center mb-12">
+            <h1 class="text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-4">
+                KPSS <span class="text-amber-500 underline decoration-amber-500/30">AKADEMİ</span> PRO
+            </h1>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto font-medium leading-relaxed">
+                KPSS ve YKS sınavlarına hazırlanırken interaktif haritalar ve 100'lerce soruyla bilgini tazele.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <!-- Soru Bankası Paneli -->
+            <div class="card-gradient p-8 rounded-[3rem] border border-slate-700/50 shadow-2xl">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-500 text-2xl">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-black uppercase italic">Soru Bankası</h2>
+                        <p class="text-slate-500 text-sm font-bold tracking-widest uppercase">Doğru / Yanlış Modu</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 gap-4">
+                    <button onclick="selectCategory('tarih')" class="glass-btn p-6 rounded-3xl flex items-center justify-between group">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-landmark text-red-500 text-xl"></i>
+                            <span class="font-black text-lg">TARİH</span>
+                        </div>
+                        <span class="text-xs font-bold text-slate-500">50 SORU</span>
+                    </button>
+                    <button onclick="selectCategory('cografya')" class="glass-btn p-6 rounded-3xl flex items-center justify-between group">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-globe-americas text-blue-500 text-xl"></i>
+                            <span class="font-black text-lg">COĞRAFYA</span>
+                        </div>
+                        <span class="text-xs font-bold text-slate-500">50 SORU</span>
+                    </button>
+                </div>
             </div>
-            <h1 class="text-4xl md:text-5xl font-black tracking-tighter uppercase italic">KPSS <span class="text-amber-500">AKADEMİ</span></h1>
+
+            <!-- Harita Atölyesi Paneli -->
+            <div class="card-gradient p-8 rounded-[3rem] border border-slate-700/50 shadow-2xl">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-14 h-14 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-500 text-2xl">
+                        <i class="fas fa-map"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-black uppercase italic">Harita Atölyesi</h2>
+                        <p class="text-slate-500 text-sm font-bold tracking-widest uppercase">Yerleştirme Modu</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="selectMap('daglar')" class="glass-btn p-4 rounded-2xl flex flex-col items-center gap-2">
+                        <i class="fas fa-mountain text-emerald-500"></i>
+                        <span class="text-xs font-black uppercase">DAĞLAR</span>
+                    </button>
+                    <button onclick="selectMap('ovalar')" class="glass-btn p-4 rounded-2xl flex flex-col items-center gap-2">
+                        <i class="fas fa-vector-square text-orange-500"></i>
+                        <span class="text-xs font-black uppercase">OVALAR</span>
+                    </button>
+                    <button onclick="selectMap('platolar')" class="glass-btn p-4 rounded-2xl flex flex-col items-center gap-2">
+                        <i class="fas fa-layer-group text-purple-500"></i>
+                        <span class="text-xs font-black uppercase">PLATOLAR</span>
+                    </button>
+                    <button onclick="selectMap('sehirler')" class="glass-btn p-4 rounded-2xl flex flex-col items-center gap-2">
+                        <i class="fas fa-city text-amber-500"></i>
+                        <span class="text-xs font-black uppercase">ŞEHİRLER</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. QUIZ ALANI -->
+    <div id="game-container" class="w-full max-w-lg mt-24 hidden px-4 pb-12">
+        <div class="text-center mb-8">
+            <div id="active-category-label" class="inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-3"></div>
+            <h1 class="text-4xl md:text-5xl font-black tracking-tighter uppercase italic">SINAV <span class="text-amber-500">MODU</span></h1>
         </div>
 
         <div id="test-view">
             <div class="flex justify-between items-end mb-4 px-2">
-                <div>
-                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">İlerleme</p>
-                    <span class="text-sm font-black bg-slate-800 px-4 py-1.5 rounded-xl border border-slate-700">
-                        SORU <span id="current-q" class="text-amber-500">1</span> / <span id="total-q">50</span>
-                    </span>
-                </div>
-                <div class="text-right">
-                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Skor</p>
-                    <span class="text-sm font-black text-emerald-400 bg-emerald-400/10 px-4 py-1.5 rounded-xl border border-emerald-400/20">
-                        PUAN: <span id="score">0</span>
-                    </span>
-                </div>
+                <span class="text-sm font-black bg-slate-800 px-4 py-1.5 rounded-xl border border-slate-700">
+                    SORU <span id="current-q" class="text-amber-500">1</span> / <span id="total-q">50</span>
+                </span>
+                <span class="text-sm font-black text-emerald-400 bg-emerald-400/10 px-4 py-1.5 rounded-xl border border-emerald-400/20">
+                    PUAN: <span id="score">0</span>
+                </span>
             </div>
 
-            <div class="w-full bg-slate-800 h-2 rounded-full mb-10 overflow-hidden border border-slate-700 shadow-inner">
-                <div id="progress" class="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" style="width: 2%"></div>
+            <div class="w-full bg-slate-800 h-2 rounded-full mb-10 overflow-hidden border border-slate-700">
+                <div id="progress" class="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500" style="width: 2%"></div>
             </div>
 
-            <div id="question-card" class="card-gradient p-12 rounded-[3rem] shadow-2xl relative min-h-[360px] flex flex-col justify-center text-center">
-                <div id="question-text" class="text-xl md:text-2xl font-bold leading-tight mb-12 text-white">Yükleniyor...</div>
+            <div id="question-card" class="card-gradient p-10 rounded-[3rem] shadow-2xl relative min-h-[380px] flex flex-col justify-center text-center">
+                <div id="question-text" class="text-xl md:text-2xl font-bold leading-tight mb-12 text-white"></div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <button onclick="handleAnswer(true)" class="group bg-emerald-600 hover:bg-emerald-500 transition-all py-6 rounded-3xl font-black text-xl shadow-xl active:scale-95 flex items-center justify-center gap-3">
+                    <button onclick="handleAnswer(true)" class="bg-emerald-600 hover:bg-emerald-500 transition-all py-6 rounded-3xl font-black text-xl shadow-xl flex items-center justify-center gap-3 active:scale-95">
                         <i class="fas fa-check-circle"></i> DOĞRU
                     </button>
-                    <button onclick="handleAnswer(false)" class="group bg-rose-600 hover:bg-rose-500 transition-all py-6 rounded-3xl font-black text-xl shadow-xl active:scale-95 flex items-center justify-center gap-3">
+                    <button onclick="handleAnswer(false)" class="bg-rose-600 hover:bg-rose-500 transition-all py-6 rounded-3xl font-black text-xl shadow-xl flex items-center justify-center gap-3 active:scale-95">
                         <i class="fas fa-times-circle"></i> YANLIŞ
                     </button>
                 </div>
@@ -204,16 +286,15 @@
         </div>
     </div>
 
-    <!-- HARİTA OYUN ALANI -->
-    <div id="map-container" class="w-full max-w-6xl mt-24 hidden px-4">
+    <!-- 3. HARİTA ALANI -->
+    <div id="map-container" class="w-full max-w-6xl mt-24 hidden px-4 pb-12">
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-black text-white italic uppercase"><span class="text-amber-500">HARİTA</span> MODU</h1>
+            <h1 class="text-3xl font-black text-white italic uppercase">TÜRKİYE <span class="text-amber-500">ETKİLEŞİMLİ</span> HARİTA</h1>
             <div id="map-instruction" class="mt-4 text-amber-500 font-black bg-amber-500/10 inline-flex items-center gap-3 px-8 py-3 rounded-2xl border border-amber-500/30 shadow-xl uppercase tracking-widest text-lg"></div>
         </div>
 
         <div class="relative bg-slate-900/60 p-4 rounded-[3rem] border border-slate-700/50 shadow-2xl overflow-hidden backdrop-blur-sm">
             <div id="leaflet-map"></div>
-            
             <div id="map-feedback" class="absolute bottom-12 left-1/2 -translate-x-1/2 bg-slate-900/95 px-10 py-5 rounded-3xl border-2 border-amber-500/50 hidden backdrop-blur-xl shadow-2xl z-[1000]">
                 <span id="feedback-text" class="text-2xl font-black"></span>
             </div>
@@ -227,7 +308,7 @@
                 <i class="fas fa-spinner fa-spin text-8xl text-amber-500 opacity-20"></i>
                 <i class="fas fa-brain text-5xl text-amber-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pulse"></i>
             </div>
-            <h2 class="text-3xl font-black italic mb-6 uppercase">BİLGİ ANALİZİ...</h2>
+            <h2 class="text-3xl font-black italic mb-6 uppercase">ANALİZ EDİLİYOR...</h2>
             <div id="ad-timer" class="text-2xl font-black text-white bg-slate-800 w-20 h-20 flex items-center justify-center rounded-full border-4 border-amber-500 mx-auto mb-6">3</div>
         </div>
     </div>
@@ -235,232 +316,230 @@
     <div id="result-modal" class="ad-overlay fixed inset-0 z-[105] flex flex-col items-center justify-center p-6 hidden">
         <div class="card-gradient p-10 rounded-[3rem] max-w-md w-full text-center border-t-8 shadow-2xl" id="modal-border">
             <div id="result-icon" class="text-7xl mb-6"></div>
-            <h3 id="result-title" class="text-3xl font-black mb-4 italic tracking-tight text-white"></h3>
+            <h3 id="result-title" class="text-3xl font-black mb-4 italic tracking-tight"></h3>
             <div class="bg-slate-900/60 p-8 rounded-[2rem] mb-10 border border-slate-700 shadow-inner">
                 <p id="result-explanation" class="text-slate-200 text-lg leading-relaxed font-medium italic"></p>
             </div>
-            <button onclick="nextQuestion()" class="w-full bg-amber-500 text-slate-900 font-black py-5 rounded-3xl hover:bg-amber-400 transition-all uppercase tracking-widest text-lg">SIRADAKİ ADIM</button>
+            <button onclick="nextQuestion()" class="w-full bg-amber-500 text-slate-900 font-black py-5 rounded-3xl hover:bg-amber-400 transition-all uppercase tracking-widest text-lg">DEVAM ET</button>
         </div>
     </div>
 
     <div id="finish-modal" class="ad-overlay fixed inset-0 z-[110] flex flex-col items-center justify-center p-6 hidden">
         <div class="card-gradient p-12 rounded-[4rem] max-w-md w-full text-center shadow-2xl">
-            <div class="w-32 h-32 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-8">
-                <i class="fas fa-award text-7xl text-amber-500"></i>
+            <div class="w-24 h-24 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-8">
+                <i class="fas fa-award text-6xl text-amber-500"></i>
             </div>
-            <h2 class="text-4xl font-black italic mb-10 uppercase">TEBRİKLER!</h2>
+            <h2 class="text-4xl font-black italic mb-10 uppercase">BİTTİ!</h2>
             <div class="bg-slate-900 py-6 px-10 rounded-3xl mb-10 border border-slate-700">
-                <p id="final-score" class="text-6xl font-black text-amber-500 tracking-tighter">100%</p>
+                <p id="final-score" class="text-6xl font-black text-amber-500 tracking-tighter"></p>
             </div>
-            <button onclick="restartCategory()" class="w-full bg-white text-slate-900 font-black py-5 rounded-3xl hover:bg-slate-200 transition-all uppercase text-lg">YENİDEN BAŞLA</button>
+            <button onclick="showHome()" class="w-full bg-white text-slate-900 font-black py-5 rounded-3xl hover:bg-slate-200 transition-all uppercase text-lg">ANA MENÜ</button>
         </div>
     </div>
 
     <script>
-        // GERÇEK DÜNYA KOORDİNATLARI (Lat, Lng)
+        // --- 50 TARİH SORUSU ---
+        const rawTarih = [
+            { text: "Uygurlar, Maniheizm dinini benimseyerek yerleşik hayata geçen ilk Türk devletidir.", answer: true, explanation: "Bu din değişikliği ile Türklerde mimari ve tarım gelişmiştir." },
+            { text: "İslamiyet öncesi Türklerde 'Kut' anlayışı egemenliğin ilahi kaynaklı olduğuna inanmaktır.", answer: true, explanation: "Gök Tanrı tarafından hükümdara verildiğine inanılır." },
+            { text: "Malazgirt Savaşı (1071) Anadolu'nun kapılarını Türklere açmıştır.", answer: true, explanation: "Alp Arslan komutasındaki Selçuklular Bizans'ı yenmiştir." },
+            { text: "Osmanlı Devleti'nde ilk altın para Kanuni Sultan Süleyman döneminde basılmıştır.", answer: false, explanation: "İlk altın para (Sultani) Fatih Sultan Mehmet döneminde basılmıştır." },
+            { text: "Lozan Antlaşması 24 Temmuz 1923 tarihinde imzalanmıştır.", answer: true, explanation: "Türkiye Cumhuriyeti'nin tapu senedi olarak kabul edilir." },
+            { text: "Sivas Kongresi bölgesel toplanmış ancak ulusal kararlar almıştır.", answer: false, explanation: "Sivas Kongresi hem toplanış hem karar bakımından ulusaldır." },
+            { text: "İstiklal Marşı, I. İnönü Savaşı'ndan sonra kabul edilmiştir.", answer: true, explanation: "12 Mart 1921 tarihinde kabul edilmiştir." },
+            { text: "Osmanlı Devleti'nde ilk matbaa Lale Devri'nde kurulmuştur.", answer: true, explanation: "İbrahim Müteferrika ve Said Efendi tarafından 1727'de kuruldu." },
+            { text: "Saltanat 1924 yılında kaldırılmıştır.", answer: false, explanation: "Saltanat 1 Kasım 1922'de kaldırılmıştır." },
+            { text: "Ankara, 13 Ekim 1923'te Türkiye'nin başkenti ilan edilmiştir.", answer: true, explanation: "Cumhuriyet ilan edilmeden hemen önce başkent olmuştur." },
+            { text: "Osmanlı'da sadrazamın mührüne 'Tuğra' denir.", answer: false, explanation: "Tuğra padişahın imzasıdır. Sadrazam 'Mühr-ü Hümayun' taşır." },
+            { text: "Kutadgu Bilig, Kaşgarlı Mahmut tarafından yazılmıştır.", answer: false, explanation: "Yusuf Has Hacib tarafından yazılmıştır. Kaşgarlı Mahmut'un eseri Divanü Lügati't Türk'tür." },
+            { text: "Miryokefalon Savaşı ile Anadolu'nun Türk yurdu olduğu kesinleşmiştir.", answer: true, explanation: "Bizans'ın Anadolu'yu geri alma ümidi tamamen sönmüştür." },
+            { text: "Tanzimat Fermanı (1839) ile hukuk üstünlüğü ilkesi kabul edilmiştir.", answer: true, explanation: "Padişah kendi yetkilerinin üzerinde kanun gücünü tanımıştır." },
+            { text: "Amasya Genelgesi ile Milli Mücadele'nin yöntemi belirlenmiştir.", answer: true, explanation: "'Milletin bağımsızlığını yine milletin azim ve kararı kurtaracaktır.'" },
+            { text: "Osmanlı'nın son padişahı Vahdettin (VI. Mehmet)'tir.", answer: true, explanation: "Saltanat kaldırıldıktan sonra ülkeden ayrılmıştır." },
+            { text: "Erzurum Kongresi'ne Mustafa Kemal başkanlık etmiştir.", answer: true, explanation: "Kongrede Temsil Heyeti oluşturulmuştur." },
+            { text: "Mondros Ateşkes Antlaşması 30 Ekim 1918'de imzalanmıştır.", answer: true, explanation: "Osmanlı Devleti fiilen sona ermiştir." },
+            { text: "Kıbrıs Barış Harekatı 1974 yılında gerçekleştirilmiştir.", answer: true, explanation: "Ayşe tatile çıksın parolasıyla başlatılmıştır." },
+            { text: "II. Meşrutiyet 1908 yılında ilan edilmiştir.", answer: true, explanation: "İttihat ve Terakki'nin baskısı sonucu ilan edilmiştir." },
+            { text: "Karlofça Antlaşması ile Osmanlı ilk kez büyük çapta toprak kaybetmiştir.", answer: true, explanation: "1699 yılında imzalanmıştır." },
+            { text: "Halifelik 1 Kasım 1922'de kaldırılmıştır.", answer: false, explanation: "Halifelik 3 Mart 1924'te kaldırılmıştır." },
+            { text: "Dumlupınar Meydan Muharebesi 'Başkomutanlık Meydan Muharebesi' olarak da bilinir.", answer: true, explanation: "30 Ağustos zaferinin kazanıldığı savaştır." },
+            { text: "Mudanya Ateşkesi ile İstanbul savaşılmadan kurtarılmıştır.", answer: true, explanation: "Diplomatik bir zaferdir." },
+            { text: "İlk Türk devletlerinde devlet meselelerinin görüşüldüğü yere 'Kurultay' denir.", answer: true, explanation: "Toy veya Kengeş olarak da adlandırılır." },
+            { text: "Osmanlı'da yeniçeri ocağını II. Mahmut kaldırmıştır.", answer: true, explanation: "Bu olaya Vaka-i Hayriye denir." },
+            { text: "Sakarya Meydan Muharebesi sonrası M. Kemal'e 'Gazi' unvanı verilmiştir.", answer: true, explanation: "Ayrıca 'Mareşal' rütbesi de verilmiştir." },
+            { text: "Atatürk İlkeleri anayasaya 1937 yılında girmiştir.", answer: true, explanation: "1924 Anayasası'nda yapılan değişiklikle eklenmiştir." },
+            { text: "Hattı müdafaa yoktur, sathı müdafaa vardır sözü Sakarya'da söylenmiştir.", answer: true, explanation: "Topyekün savaş stratejisinin simge cümlesidir." },
+            { text: "Osmanlı'da veraset sisteminde ilk değişikliği I. Murat yapmıştır.", answer: true, explanation: "Ülke padişah ve oğullarınındır anlayışını getirmiştir." },
+            { text: "İstiklal Mahkemeleri sürekli görev yapan mahkemelerdir.", answer: false, explanation: "Sadece ihtiyaç duyulan dönemlerde kurulmuş geçici mahkemelerdir." },
+            { text: "Takrir-i Sükun Yasası Şeyh Sait İsyanı üzerine çıkarılmıştır.", answer: true, explanation: "1925 yılında düzeni sağlamak için çıkarıldı." },
+            { text: "Menemen Olayı bir rejim karşıtı isyandır.", answer: true, explanation: "Cumhuriyet ve devrimlere karşı çıkmıştır (1930)." },
+            { text: "Boğazlar Komisyonu Montrö ile kaldırılmıştır.", answer: true, explanation: "1936 Montrö Boğazlar Sözleşmesi ile tam egemenlik sağlanmıştır." },
+            { text: "Hatay 1939 yılında ana vatana katılmıştır.", answer: true, explanation: "M. Kemal'in vefatından kısa süre sonra gerçekleşmiştir." },
+            { text: "I. Dünya Savaşı'nda Osmanlı'nın taarruz cepheleri Kafkas ve Kanal'dır.", answer: true, explanation: "Kalanlar savunma veya yardım cepheleridir." },
+            { text: "Vaka-i Vakvakiye IV. Mehmet döneminde gerçekleşen bir asker isyanıdır.", answer: true, explanation: "Çınar Vakası olarak da bilinir." },
+            { text: "Padişahın yetkilerinin ilk kez kısıtlandığı belge Sened-i İttifak'tır.", answer: true, explanation: "1808'de Ayanlar ile imzalanmıştır." },
+            { text: "İnalcık'a göre Osmanlı'nın kuruluşu 1302 Koyunhisar Savaşı'dır.", answer: true, explanation: "Halil İnalcık bu tarihi bağımsızlık için baz alır." },
+            { text: "Lale Devri Pasarofça Antlaşması ile başlar.", answer: true, explanation: "Patrona Halil İsyanı ile sona erer." },
+            { text: "İlk Türk dünyası sözlüğü olan Divanü Lügati't Türk Arapça yazılmıştır.", answer: false, explanation: "Araplara Türkçe öğretmek amacıyla yazılmış, Türkçe sözlüktür." },
+            { text: "Preveze Deniz Zaferi ile Akdeniz bir Türk gölü haline gelmiştir.", answer: true, explanation: "Barbaros Hayrettin Paşa komutasında kazanılmıştır." },
+            { text: "Bağdat Fatihi olarak bilinen padişah IV. Murat'tır.", answer: true, explanation: "Revan ve Bağdat seferlerini yapmıştır." },
+            { text: "Kabotaj Kanunu denizlerdeki egemenlik ile ilgilidir.", answer: true, explanation: "1 Temmuz 1926'da yürürlüğe girmiştir." },
+            { text: "Saltanat Şurası Sevr Antlaşması'nı onaylayan kuruldur.", answer: true, explanation: "Mebusan Meclisi kapalı olduğu için bu kurul onaylamıştır." },
+            { text: "Sadabat Paktı İtalya'nın yayılmacı politikasına karşı kurulmuştur.", answer: true, explanation: "Türkiye, İran, Irak ve Afganistan arasında (1937)." },
+            { text: "Nutuk 1919-1927 yılları arasındaki olayları kapsar.", answer: true, explanation: "Samsun'a çıkışla başlar, Gençliğe Hitabe ile biter." },
+            { text: "Osmanlı'da bütçe açığını kapatmak için 'Tarhuncu Bütçesi' yapılmıştır.", answer: true, explanation: "İlk modern bütçe denemesi kabul edilir." },
+            { text: "Misak-ı Milli'den verilen ilk taviz Moskova Antlaşması'ndaki Batum'dur.", answer: true, explanation: "Gürcistan'a bırakılmıştır." },
+            { text: "Türklerde ilk para Göktürkler döneminde basılmıştır.", answer: false, explanation: "Kendi adına para bastıran ilk Türk devleti Türgişler'dir (Baga Tarkan)." }
+        ];
+
+        // --- 50 COĞRAFYA SORUSU ---
+        const rawCografya = [
+            { text: "Türkiye'nin en uzun kıyı sınırı Karadeniz Bölgesi'ndedir.", answer: false, explanation: "Girinti-çıkıntıdan dolayı en uzun kıyı Ege Bölgesi'ndedir." },
+            { text: "Dünyanın en fazla bor rezervine sahip ülkesi Türkiye'dir.", answer: true, explanation: "Dünya rezervlerinin %70'inden fazlası Türkiye'dedir." },
+            { text: "Türkiye'nin en yüksek dağı Ağrı Dağı'dır.", answer: true, explanation: "5137 metre ile en yüksek zirvedir." },
+            { text: "Tuz Gölü Türkiye'nin alanı en çok değişen gölüdür.", answer: true, explanation: "Derinliği az olduğu için buharlaşma ile alanı daralır." },
+            { text: "Türkiye'de rüzgar erozyonu en çok İç Anadolu'da görülür.", answer: true, explanation: "Bitki örtüsü cılız ve arazi düz olduğu için." },
+            { text: "Fön rüzgarları estiği yamacı serinletir.", answer: false, explanation: "Fön rüzgarları sürtünme nedeniyle her 100 metrede 1 derece ısınır." },
+            { text: "Türkiye'nin en büyük delta ovası Çukurova'dır.", answer: true, explanation: "Seyhan ve Ceyhan nehirlerinin taşıdığı alüvyonlarla oluşmuştur." },
+            { text: "Marmara Bölgesi'nde kümes hayvancılığı gelişmiştir.", answer: true, explanation: "Tüketici nüfusa yakınlık nedeniyle gelişmiştir." },
+            { text: "Türkiye'nin en doğusu ile en batısı arasında 76 dakikalık zaman farkı vardır.", answer: true, explanation: "19 meridyen farkı vardır (19 x 4 = 76 dk)." },
+            { text: "Güneydoğu Anadolu'da buharlaşma çok şiddetlidir.", answer: true, explanation: "Yaz sıcaklığı ve kuraklık nedeniyle." },
+            { text: "Karadeniz kıyılarında orman alt sınırı 0 metreden başlar.", answer: true, explanation: "Nem ve yağışın bol olmasından dolayı." },
+            { text: "Türkiye'de deprem riskinin en az olduğu yer Kuzey Anadolu Fay Hattı'dır.", answer: false, explanation: "KAF, Türkiye'nin en aktif ve riskli fay hattıdır." },
+            { text: "Akdeniz ikliminin karakteristik bitki örtüsü Makidir.", answer: true, explanation: "Kısa boylu, bodur çalılar." },
+            { text: "Rize'de turunçgil yetişmesi bir mikroklima örneğidir.", answer: true, explanation: "Çevresinden farklı iklim özelliği gösterdiği için." },
+            { text: "Türkiye'de güneş enerjisinden yararlanma potansiyeli en az Karadeniz'dedir.", answer: true, explanation: "Bulutluluk oranının yüksek olması nedeniyle." },
+            { text: "Maden çeşitliliğinin en fazla olduğu bölge Ege'dir.", answer: false, explanation: "En fazla Doğu Anadolu (Yukarı Fırat Bölümü) bölgesidir." },
+            { text: "Türkiye 26-45 doğu meridyenleri arasındadır.", answer: true, explanation: "Türkiye'nin matematik konumudur." },
+            { text: "Delta ovaları verimli tarım topraklarıdır.", answer: true, explanation: "Alüvyal topraklardan oluştukları için." },
+            { text: "Türkiye'de sanayinin en gelişmiş olduğu il İstanbul'dur.", answer: true, explanation: "Ulaşım, sermaye ve pazarlama imkanları sayesinde." },
+            { text: "Afşin-Elbistan'da linyit yatakları bulunur.", answer: true, explanation: "Türkiye'nin en büyük linyit rezervidir." },
+            { text: "Toros Dağları kıvrımlı dağ sistemine örnektir.", answer: true, explanation: "Alp-Himalaya kuşağı içerisindedir." },
+            { text: "Ege kıyılarında dağlar denize dik uzanır.", answer: true, explanation: "Bu nedenle kıyı ile iç kesim arası ulaşım kolaydır." },
+            { text: "Türkiye'de aktif volkan bulunmamaktadır.", answer: true, explanation: "Sönmüş volkanlar vardır ancak aktif olan yoktur." },
+            { text: "Van Gölü bir volkanik set gölüdür.", answer: true, explanation: "Nemrut lavlarının akarsu önünü kapatmasıyla oluşmuştur." },
+            { text: "Türkiye'de nüfus dağılışı düzenlidir.", answer: false, explanation: "Yer şekilleri ve iklim nedeniyle kıyılarda toplanmıştır." },
+            { text: "Bafra ve Çarşamba ovaları Samsun ilindedir.", answer: true, explanation: "Karadeniz'in en önemli deltalarıdır." },
+            { text: "Zonguldak'ta taş kömürü çıkarılır.", answer: true, explanation: "I. jeolojik zaman arazisi olduğunu gösterir." },
+            { text: "Türkiye'de yazları en sıcak yer Karadeniz'dir.", answer: false, explanation: "En sıcak yer Güneydoğu Anadolu'dur." },
+            { text: "Bitlis'teki Nemrut Dağı ile Adıyaman'daki Nemrut Dağı aynıdır.", answer: false, explanation: "Bitlis'teki volkanik, Adıyaman'daki ise Kommagene krallığı kalıntıları olan turistik bir dağdır." },
+            { text: "Kışın Türkiye'de en ılık yer Akdeniz kıyılarıdır.", answer: true, explanation: "Enlem ve denizellik etkisiyle." },
+            { text: "Türkiye'de çay tarımı sadece Doğu Karadeniz'de yapılır.", answer: true, explanation: "Özel iklim ve toprak isteği nedeniyle." },
+            { text: "Marmara Bölgesi'nde hidroelektrik potansiyeli çok yüksektir.", answer: false, explanation: "Ortalama yükselti az olduğu için potansiyel düşüktür." },
+            { text: "Türkiye'de platoların geniş yer kaplaması epirojenez ile ilgilidir.", answer: true, explanation: "Anadolu'nun toptan yükselmesi (III. ve IV. zaman)." },
+            { text: "Ege'de kıyı derinliği azdır.", answer: true, explanation: "Kıta sahanlığı geniştir." },
+            { text: "Antalya'da seracılık çok gelişmiştir.", answer: true, explanation: "Kış ılıklığı ve güneşli gün sayısının fazlalığı nedeniyle." },
+            { text: "Türkiye'de hayvancılıkta verimi artırmak için mera hayvancılığı yapılmalıdır.", answer: false, explanation: "Modern yöntem olan besi ve ahır hayvancılığı yapılmalıdır." },
+            { text: "Bakır işletmesi Samsun'da bulunur.", answer: true, explanation: "Ulaşım (liman) imkanı nedeniyle kurulmuştur." },
+            { text: "Muğla (Menteşe) yöresi dağlık olduğu için az nüfusludur.", answer: true, explanation: "Ana yollara sapa kaldığı için de gelişmemiştir." },
+            { text: "GOP (Güneydoğu Anadolu Projesi) sadece tarımı hedefler.", answer: false, explanation: "Bölgesel kalkınmayı (eğitim, sağlık, enerji) hedefler." },
+            { text: "Türkiye'nin en güney ucu Hatay (Beysun Köyü) dır.", answer: true, explanation: "36 derece kuzey paraleli üzerindedir." },
+            { text: "Damlataş Mağarası karstik oluşumlu bir mağaradır.", answer: true, explanation: "Antalya-Alanya bölgesindedir." },
+            { text: "Türkiye'de buğday hasadı en erken İç Anadolu'da yapılır.", answer: false, explanation: "Sıcaklıktan dolayı en erken Akdeniz'de yapılır." },
+            { text: "Türkiye'nin en büyük adası Gökçeada'dır.", answer: true, explanation: "Çanakkale iline bağlıdır." },
+            { text: "Yaz turizmi sezonu Karadeniz'de daha uzundur.", answer: false, explanation: "Yağış ve bulutluluk nedeniyle en kısadır." },
+            { text: "Türkiye'de heyelan en çok Karadeniz Bölgesi'nde görülür.", answer: true, explanation: "Eğim, yağış ve killi toprak yapısı nedeniyle." },
+            { text: "Jeotermal enerji potansiyeli en çok Ege'dedir.", answer: true, explanation: "Kırıklı (fay) yapı fazlalığı nedeniyle." },
+            { text: "Bolu-Düzce çevresinde mobilya sanayisi gelişmiştir.", answer: true, explanation: "Hammadde (orman) yakınlığı nedeniyle." },
+            { text: "Türkiye'de nüfusun en az olduğu yer Bayburt'tur.", answer: false, explanation: "Genellikle Tunceli veya Bayburt arasında değişir (Güncel veriye göre bakılmalıdır)." },
+            { text: "Keban Barajı Fırat Nehri üzerindedir.", answer: true, explanation: "Türkiye'nin en büyük barajlarından biridir." },
+            { text: "Karstik göller en çok Batı Toroslar'da bulunur.", answer: true, explanation: "Salda, Kestel, Avlan gibi göller örnektir." }
+        ];
+
+        // --- HARİTA VERİLERİ ---
         const mapData = {
             daglar: [
-                { id: 1, name: "Ağrı Dağı", lat: 39.7025, lng: 44.2991 },
-                { id: 2, name: "Erciyes Dağı", lat: 38.5317, lng: 35.4475 },
-                { id: 3, name: "Uludağ", lat: 40.0711, lng: 29.1292 },
-                { id: 4, name: "Kaçkar Dağları", lat: 40.8384, lng: 41.1611 },
-                { id: 5, name: "Yıldız Dağları", lat: 41.77, lng: 27.42 },
-                { id: 6, name: "Hasan Dağı", lat: 38.12, lng: 34.16 },
-                { id: 7, name: "Nemrut Dağı (Bitlis)", lat: 38.65, lng: 42.23 },
-                { id: 8, name: "Süphan Dağı", lat: 38.92, lng: 42.82 }
+                { id: 1, name: "Ağrı Dağı", lat: 39.70, lng: 44.30 },
+                { id: 2, name: "Erciyes Dağı", lat: 38.53, lng: 35.45 },
+                { id: 3, name: "Uludağ", lat: 40.07, lng: 29.13 },
+                { id: 4, name: "Süphan Dağı", lat: 38.93, lng: 42.82 },
+                { id: 5, name: "Kaçkar Dağı", lat: 40.84, lng: 41.16 },
+                { id: 6, name: "Hasan Dağı", lat: 38.13, lng: 34.16 },
+                { id: 7, name: "Nur (Amanos) Dağları", lat: 36.75, lng: 36.33 }
             ],
             ovalar: [
-                { id: 101, name: "Çukurova", lat: 36.8, lng: 35.3 },
-                { id: 102, name: "Bafra Ovası", lat: 41.6, lng: 35.9 },
-                { id: 103, name: "Çarşamba Ovası", lat: 41.3, lng: 36.7 },
-                { id: 104, name: "Konya Ovası", lat: 37.8, lng: 32.5 },
-                { id: 105, name: "Gediz Ovası", lat: 38.6, lng: 27.8 },
-                { id: 106, name: "Altınbaşak Ovası", lat: 37.1, lng: 38.9 }
+                { id: 101, name: "Çukurova", lat: 36.85, lng: 35.32 },
+                { id: 102, name: "Bafra Ovası", lat: 41.57, lng: 35.91 },
+                { id: 103, name: "Çarşamba Ovası", lat: 41.35, lng: 36.71 },
+                { id: 104, name: "Konya Ovası", lat: 37.88, lng: 32.48 },
+                { id: 105, name: "Iğdır Ovası", lat: 39.92, lng: 44.04 }
             ],
             platolar: [
-                { id: 201, name: "Haymana Platosu", lat: 39.4, lng: 32.5 },
-                { id: 202, name: "Obruk Platosu", lat: 38.2, lng: 33.2 },
-                { id: 203, name: "Teke Platosu", lat: 36.6, lng: 29.8 },
-                { id: 204, name: "Taşeli Platosu", lat: 36.4, lng: 32.8 },
-                { id: 205, name: "Erzurum-Kars Platosu", lat: 40.3, lng: 42.5 }
+                { id: 201, name: "Haymana Platosu", lat: 39.43, lng: 32.49 },
+                { id: 202, name: "Teke Platosu", lat: 36.60, lng: 30.00 },
+                { id: 203, name: "Taşeli Platosu", lat: 36.50, lng: 33.00 },
+                { id: 204, name: "Erzurum-Kars Platosu", lat: 40.40, lng: 42.60 },
+                { id: 205, name: "Cihanbeyli Platosu", lat: 38.65, lng: 32.92 }
             ],
             goller: [
-                { id: 301, name: "Van Gölü", lat: 38.6, lng: 42.9 },
-                { id: 302, name: "Tuz Gölü", lat: 38.8, lng: 33.3 },
-                { id: 303, name: "Beyşehir Gölü", lat: 37.7, lng: 31.5 },
-                { id: 304, name: "Eğirdir Gölü", lat: 38.1, lng: 30.9 },
-                { id: 305, name: "İznik Gölü", lat: 40.4, lng: 29.5 },
-                { id: 306, name: "Bafa Gölü", lat: 37.5, lng: 27.4 }
+                { id: 301, name: "Van Gölü", lat: 38.63, lng: 42.90 },
+                { id: 302, name: "Tuz Gölü", lat: 38.83, lng: 33.33 },
+                { id: 303, name: "Beyşehir Gölü", lat: 37.75, lng: 31.50 },
+                { id: 304, name: "Eğirdir Gölü", lat: 38.05, lng: 30.88 },
+                { id: 305, name: "İznik Gölü", lat: 40.43, lng: 29.50 }
             ],
             sehirler: [
-                { id: 401, name: "İstanbul", lat: 41.0082, lng: 28.9784 },
-                { id: 402, name: "Ankara", lat: 39.9334, lng: 32.8597 },
-                { id: 403, name: "İzmir", lat: 38.4237, lng: 27.1428 },
-                { id: 404, name: "Antalya", lat: 36.8969, lng: 30.7133 },
-                { id: 405, name: "Diyarbakır", lat: 37.9144, lng: 40.2110 },
-                { id: 406, name: "Trabzon", lat: 41.0027, lng: 39.7168 },
-                { id: 407, name: "Eskişehir", lat: 39.7767, lng: 30.5206 },
-                { id: 408, name: "Gaziantep", lat: 37.0662, lng: 37.3833 }
+                { id: 401, name: "İstanbul", lat: 41.01, lng: 28.98 },
+                { id: 402, name: "Ankara", lat: 39.93, lng: 32.86 },
+                { id: 403, name: "İzmir", lat: 38.42, lng: 27.14 },
+                { id: 404, name: "Antalya", lat: 36.90, lng: 30.71 },
+                { id: 405, name: "Trabzon", lat: 41.00, lng: 39.72 },
+                { id: 406, name: "Gaziantep", lat: 37.07, lng: 37.38 }
             ]
         };
 
-        const rawTarih = [
-            { text: "Osmanlı'nın ilk başkenti Bursa'dır.", answer: false, explanation: "Osmanlı'nın ilk başkenti Söğüt ve Bilecik çevresidir." },
-            { text: "Cumhuriyet 29 Ekim 1923'te ilan edilmiştir.", answer: true, explanation: "Türkiye Büyük Millet Meclisi tarafından ilan edilmiştir." },
-            { text: "Lozan Antlaşması 1923 yılında imzalanmıştır.", answer: true, explanation: "24 Temmuz 1923'te İsviçre'nin Lozan şehrinde imzalandı." },
-            { text: "Sivas Kongresi bölgesel bir kongredir.", answer: false, explanation: "Sivas Kongresi hem toplanış hem karar bakımından ulusaldır." },
-            { text: "Misak-ı Milli kararları son Osmanlı Mebusan Meclisi'nde kabul edilmiştir.", answer: true, explanation: "28 Ocak 1920'de gizli oturumda kabul edildi." },
-            { text: "Saltanat 1924 yılında kaldırılmıştır.", answer: false, explanation: "Saltanat 1 Kasım 1922'de kaldırılmıştır." },
-            { text: "Büyük Taarruz 'Ordular ilk hedefiniz Akdeniz'dir' emriyle başlamıştır.", answer: true, explanation: "Dumlupınar Meydan Muharebesi sonrası bu emir verilmiştir." }
-        ];
-
-        const rawCografya = [
-            { text: "Türkiye'nin en yüksek dağı Ağrı Dağı'dır.", answer: true, explanation: "Ağrı Dağı 5137 metre yüksekliğindedir." },
-            { text: "İzmir, Marmara Bölgesi'ndedir.", answer: false, explanation: "İzmir, Ege Bölgesi'ndedir." },
-            { text: "Türkiye'nin en uzun sınır komşusu Suriye'dir.", answer: true, explanation: "Suriye sınırı yaklaşık 911 km uzunluğundadır." },
-            { text: "Maden çeşitliliğinin en fazla olduğu bölge Karadeniz'dir.", answer: false, explanation: "Maden çeşitliliği en fazla Doğu Anadolu (Yukarı Fırat Bölümü) bölgesidir." },
-            { text: "Kuzey Anadolu Fay Hattı Türkiye'nin en aktif fay hattıdır.", answer: true, explanation: "Saros Körfezi'nden başlar ve Ermenistan sınırına kadar uzanır." },
-            { text: "Antalya'da kış ılıklığı görülmez.", answer: false, explanation: "Akdeniz iklimi etkisiyle Antalya'da kışlar ılık ve yağışlı geçer." },
-            { text: "Tuz Gölü Türkiye'nin en büyük gölüdür.", answer: false, explanation: "Türkiye'nin en büyük gölü Van Gölü'dür." }
-        ];
-
-        let map, currentMarkerLayer;
-        let currentMode = 'quiz';
-        let currentCategory = 'tarih';
-        let currentMapType = 'daglar';
+        // --- OYUN MANTIĞI ---
+        let map, markerLayer;
+        let currentMode = 'home';
+        let currentCategory = '';
+        let currentMapType = '';
         let score = 0;
         let currentIndex = 0;
-        let adsEnabled = true;
         let activeQuestions = [];
-        let mapItemsToFind = [];
-        let currentMapItem = null;
+        let itemsToFind = [];
+        let targetItem = null;
+        let adsEnabled = true;
+        let streak = 0;
+        let history = [];
 
-        // Leaflet Harita Başlatma
-        function initLeafletMap() {
-            if (map) return;
-            map = L.map('leaflet-map', {
-                center: [39.0, 35.0],
-                zoom: 6,
-                minZoom: 5,
-                maxBounds: [[35.0, 25.0], [43.0, 46.0]]
-            });
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '© OpenStreetMap'
-            }).addTo(map);
-
-            currentMarkerLayer = L.layerGroup().addTo(map);
-        }
-
-        function toggleSidebar() { 
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('-translate-x-full'); 
-        }
-
-        function switchTab(tab) {
-            document.getElementById('content-cats').classList.toggle('hidden', tab !== 'cats');
-            document.getElementById('content-history').classList.toggle('hidden', tab !== 'history');
-            document.getElementById('tab-cats').className = `flex-1 py-3 text-sm font-bold border-b-2 ${tab === 'cats' ? 'border-amber-500 bg-slate-800/50' : 'border-transparent hover:bg-slate-800/30'}`;
-            document.getElementById('tab-history').className = `flex-1 py-3 text-sm font-bold border-b-2 ${tab === 'history' ? 'border-amber-500 bg-slate-800/50' : 'border-transparent hover:bg-slate-800/30'}`;
+        function showHome() {
+            currentMode = 'home';
+            document.getElementById('home-view').classList.remove('hidden');
+            document.getElementById('game-container').classList.add('hidden');
+            document.getElementById('map-container').classList.add('hidden');
+            document.getElementById('finish-modal').classList.add('hidden');
         }
 
         function selectCategory(cat) {
             currentMode = 'quiz';
             currentCategory = cat;
+            document.getElementById('home-view').classList.add('hidden');
             document.getElementById('game-container').classList.remove('hidden');
             document.getElementById('map-container').classList.add('hidden');
             
-            // Aktif sınıfı güncelle
-            document.querySelectorAll('.category-card').forEach(el => el.classList.remove('active'));
-            document.getElementById(`cat-${cat}`).classList.add('active');
+            const label = document.getElementById('active-category-label');
+            label.innerText = cat === 'tarih' ? 'TARİH SORULARI' : 'COĞRAFYA SORULARI';
+            label.className = `inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-3 ${cat === 'tarih' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`;
             
             restartCategory();
-            toggleSidebar();
-        }
-
-        function selectMap(type) {
-            currentMode = 'map';
-            currentMapType = type;
-            document.getElementById('game-container').classList.add('hidden');
-            document.getElementById('map-container').classList.remove('hidden');
-            
-            // Aktif sınıfı güncelle
-            document.querySelectorAll('.category-card').forEach(el => el.classList.remove('active'));
-            document.getElementById(`cat-map-${type}`).classList.add('active');
-
-            setTimeout(() => {
-                initLeafletMap();
-                map.invalidateSize();
-                startMapGame();
-            }, 100);
-            toggleSidebar();
-        }
-
-        function startMapGame() {
-            currentMarkerLayer.clearLayers();
-            mapItemsToFind = [...mapData[currentMapType]].sort(() => Math.random() - 0.5);
-            
-            mapData[currentMapType].forEach(item => {
-                const icon = L.divIcon({
-                    className: 'custom-div-icon',
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 12]
-                });
-
-                const marker = L.marker([item.lat, item.lng], { icon: icon }).addTo(currentMarkerLayer);
-                marker.on('click', () => handleMapClick(item, marker));
-            });
-            nextMapItem();
-        }
-
-        function nextMapItem() {
-            if (mapItemsToFind.length === 0) {
-                document.getElementById('finish-modal').classList.remove('hidden');
-                document.getElementById('final-score').innerText = "100%";
-                return;
-            }
-            currentMapItem = mapItemsToFind.pop();
-            document.getElementById('map-instruction').innerHTML = `<i class="fas fa-search-location"></i> ${currentMapItem.name}`;
-        }
-
-        function handleMapClick(clickedItem, marker) {
-            if (clickedItem.id === currentMapItem.id) {
-                marker.getElement().classList.add('correct-marker');
-                showFeedback(`${clickedItem.name} DOĞRU ✓`, true);
-                setTimeout(nextMapItem, 800);
-            } else {
-                showFeedback("YANLIŞ KONUM!", false);
-            }
-        }
-
-        function showFeedback(text, isSuccess) {
-            const fb = document.getElementById('map-feedback');
-            const fbText = document.getElementById('feedback-text');
-            fbText.innerText = text;
-            fbText.className = isSuccess ? "text-emerald-400 font-black" : "text-rose-400 font-black";
-            fb.classList.remove('hidden');
-            setTimeout(() => fb.classList.add('hidden'), 1500);
+            if(window.innerWidth < 1024) toggleSidebar();
         }
 
         function restartCategory() {
             currentIndex = 0;
             score = 0;
-            if (currentMode === 'quiz') {
-                const pool = currentCategory === 'tarih' ? rawTarih : rawCografya;
-                activeQuestions = [...pool].sort(() => Math.random() - 0.5);
-                document.getElementById('total-q').innerText = activeQuestions.length;
-                updateQuestion();
-            } else {
-                startMapGame();
-            }
+            const pool = currentCategory === 'tarih' ? rawTarih : rawCografya;
+            activeQuestions = [...pool].sort(() => Math.random() - 0.5);
+            document.getElementById('total-q').innerText = activeQuestions.length;
             document.getElementById('finish-modal').classList.add('hidden');
-            document.getElementById('result-modal').classList.add('hidden');
+            updateQuestion();
         }
 
         function updateQuestion() {
             if (currentIndex >= activeQuestions.length) {
-                document.getElementById('finish-modal').classList.remove('hidden');
-                document.getElementById('final-score').innerText = score;
+                showFinish();
                 return;
             }
             const q = activeQuestions[currentIndex];
@@ -472,40 +551,36 @@
 
         function handleAnswer(choice) {
             const q = activeQuestions[currentIndex];
-            const isCorrect = choice === q.answer;
-            if (adsEnabled) showAd(() => showResult(isCorrect, q));
-            else showResult(isCorrect, q);
-        }
+            const isCorrect = (choice === q.answer);
+            
+            if (isCorrect) {
+                score++;
+                streak++;
+            } else {
+                streak = 0;
+            }
+            document.getElementById('streak').innerText = streak;
 
-        function showAd(callback) {
-            const overlay = document.getElementById('ad-overlay');
-            const timer = document.getElementById('ad-timer');
-            overlay.classList.remove('hidden');
-            let time = 2; 
-            timer.innerText = time;
-            const interval = setInterval(() => {
-                time--;
-                timer.innerText = time;
-                if (time <= 0) { 
-                    clearInterval(interval); 
-                    overlay.classList.add('hidden'); 
-                    callback(); 
-                }
-            }, 800);
+            if (adsEnabled && (currentIndex + 1) % 5 === 0) {
+                showAd(() => showResult(isCorrect, q));
+            } else {
+                showResult(isCorrect, q);
+            }
         }
 
         function showResult(isCorrect, q) {
-            if (isCorrect) score++;
             const modal = document.getElementById('result-modal');
             const border = document.getElementById('modal-border');
             modal.classList.remove('hidden');
             
             document.getElementById('result-icon').innerHTML = isCorrect ? '🎯' : '💡';
-            document.getElementById('result-title').innerText = isCorrect ? 'HARİKA!' : 'DİKKAT!';
-            document.getElementById('result-title').className = `text-3xl font-black mb-4 italic tracking-tight ${isCorrect ? 'text-emerald-400' : 'text-amber-500'}`;
+            document.getElementById('result-title').innerText = isCorrect ? 'HARİKA, DOĞRU!' : 'ÖNEMLİ BİLGİ';
+            document.getElementById('result-title').className = `text-3xl font-black mb-4 italic ${isCorrect ? 'text-emerald-400' : 'text-amber-500'}`;
             border.style.borderColor = isCorrect ? '#10b981' : '#f59e0b';
-            
             document.getElementById('result-explanation').innerText = q.explanation;
+
+            history.unshift({ text: q.text, isCorrect });
+            updateHistoryUI();
         }
 
         function nextQuestion() {
@@ -514,19 +589,107 @@
             updateQuestion();
         }
 
+        function showFinish() {
+            document.getElementById('finish-modal').classList.remove('hidden');
+            document.getElementById('final-score').innerText = score + " PUAN";
+        }
+
+        // --- HARİTA MODU ---
+        function selectMap(type) {
+            currentMode = 'map';
+            currentMapType = type;
+            document.getElementById('home-view').classList.add('hidden');
+            document.getElementById('game-container').classList.add('hidden');
+            document.getElementById('map-container').classList.remove('hidden');
+            
+            setTimeout(() => {
+                if (!map) {
+                    map = L.map('leaflet-map', { center: [39.0, 35.0], zoom: 6, minZoom: 5 });
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+                    markerLayer = L.layerGroup().addTo(map);
+                }
+                map.invalidateSize();
+                startMapGame();
+            }, 100);
+            if(window.innerWidth < 1024) toggleSidebar();
+        }
+
+        function startMapGame() {
+            markerLayer.clearLayers();
+            itemsToFind = [...mapData[currentMapType]].sort(() => Math.random() - 0.5);
+            
+            mapData[currentMapType].forEach(item => {
+                const icon = L.divIcon({ className: 'custom-div-icon', iconSize: [24, 24], iconAnchor: [12, 12] });
+                const marker = L.marker([item.lat, item.lng], { icon: icon }).addTo(markerLayer);
+                marker.on('click', () => {
+                    if (targetItem && item.id === targetItem.id) {
+                        marker.getElement().classList.add('correct-marker');
+                        showMapFeedback(`${item.name} DOĞRU ✓`, true);
+                        setTimeout(nextMapItem, 1000);
+                    } else {
+                        showMapFeedback("YANLIŞ KONUM!", false);
+                    }
+                });
+            });
+            nextMapItem();
+        }
+
+        function nextMapItem() {
+            if (itemsToFind.length === 0) {
+                document.getElementById('finish-modal').classList.remove('hidden');
+                document.getElementById('final-score').innerText = "HARİTA TAMAMLANDI";
+                return;
+            }
+            targetItem = itemsToFind.pop();
+            document.getElementById('map-instruction').innerHTML = `<i class="fas fa-search-location"></i> ${targetItem.name}`;
+        }
+
+        function showMapFeedback(text, isSuccess) {
+            const fb = document.getElementById('map-feedback');
+            const fbText = document.getElementById('feedback-text');
+            fbText.innerText = text;
+            fbText.className = isSuccess ? "text-emerald-400 font-black" : "text-rose-400 font-black";
+            fb.classList.remove('hidden');
+            setTimeout(() => fb.classList.add('hidden'), 1500);
+        }
+
+        // --- DİĞER FONKSİYONLAR ---
         function toggleAds() {
             adsEnabled = !adsEnabled;
             const btn = document.getElementById('no-ads-btn');
-            if(adsEnabled) {
-                btn.className = "bg-amber-600/10 text-amber-500 border border-amber-500/30 px-6 py-3 rounded-2xl text-sm font-bold hover:bg-amber-600 hover:text-white transition-all shadow-lg";
-                btn.innerHTML = '<i class="fas fa-bolt mr-2"></i>REKLAMLARI KALDIR';
-            } else {
-                btn.className = "bg-emerald-600 text-white px-6 py-3 rounded-2xl text-sm font-bold hover:bg-emerald-500 transition-all shadow-lg";
-                btn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>REKLAMLAR KAPALI';
-            }
+            btn.innerHTML = adsEnabled ? '<i class="fas fa-bolt mr-2"></i>REKLAMLARI KALDIR' : '<i class="fas fa-check-circle mr-2"></i>REKLAMLAR KAPALI';
+            btn.className = adsEnabled ? "bg-amber-600/10 text-amber-500 border border-amber-500/30 px-6 py-3 rounded-2xl text-sm font-bold shadow-lg" : "bg-emerald-600 text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-lg";
         }
 
-        window.onload = () => restartCategory();
+        function showAd(callback) {
+            const overlay = document.getElementById('ad-overlay');
+            const timer = document.getElementById('ad-timer');
+            overlay.classList.remove('hidden');
+            let time = 3;
+            timer.innerText = time;
+            const interval = setInterval(() => {
+                time--;
+                timer.innerText = time;
+                if (time <= 0) { clearInterval(interval); overlay.classList.add('hidden'); callback(); }
+            }, 800);
+        }
+
+        function updateHistoryUI() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = history.slice(0, 15).map(item => `
+                <div class="bg-slate-800/80 p-3 rounded-xl border-l-4 ${item.isCorrect ? 'border-emerald-500' : 'border-rose-500'}">
+                    <p class="text-xs text-slate-200 leading-tight">${item.text}</p>
+                </div>
+            `).join('');
+        }
+
+        function switchTab(tab) {
+            document.getElementById('content-cats').classList.toggle('hidden', tab !== 'cats');
+            document.getElementById('content-history').classList.toggle('hidden', tab !== 'history');
+        }
+
+        // Başlat
+        window.onload = showHome;
     </script>
 </body>
 </html>
