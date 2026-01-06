@@ -125,6 +125,18 @@
                 </div>
                 <h3 class="font-bold text-sm">Ovalar</h3>
             </div>
+            <div onclick="selectMap('platolar')" id="cat-map-platolar" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-500">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <h3 class="font-bold text-sm">Platolar</h3>
+            </div>
+            <div onclick="selectMap('goller')" id="cat-map-goller" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center text-cyan-500">
+                    <i class="fas fa-tint"></i>
+                </div>
+                <h3 class="font-bold text-sm">Göller</h3>
+            </div>
             <div onclick="selectMap('sehirler')" id="cat-map-sehirler" class="category-card p-4 rounded-2xl bg-slate-800/50 hover:bg-slate-700/50 flex items-center gap-4">
                 <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500">
                     <i class="fas fa-map-marker-alt"></i>
@@ -223,7 +235,7 @@
     <div id="result-modal" class="ad-overlay fixed inset-0 z-[105] flex flex-col items-center justify-center p-6 hidden">
         <div class="card-gradient p-10 rounded-[3rem] max-w-md w-full text-center border-t-8 shadow-2xl" id="modal-border">
             <div id="result-icon" class="text-7xl mb-6"></div>
-            <h3 id="result-title" class="text-3xl font-black mb-4 italic tracking-tight"></h3>
+            <h3 id="result-title" class="text-3xl font-black mb-4 italic tracking-tight text-white"></h3>
             <div class="bg-slate-900/60 p-8 rounded-[2rem] mb-10 border border-slate-700 shadow-inner">
                 <p id="result-explanation" class="text-slate-200 text-lg leading-relaxed font-medium italic"></p>
             </div>
@@ -253,32 +265,63 @@
                 { id: 3, name: "Uludağ", lat: 40.0711, lng: 29.1292 },
                 { id: 4, name: "Kaçkar Dağları", lat: 40.8384, lng: 41.1611 },
                 { id: 5, name: "Yıldız Dağları", lat: 41.77, lng: 27.42 },
-                { id: 6, name: "Aydos Dağı", lat: 37.49, lng: 34.60 }
+                { id: 6, name: "Hasan Dağı", lat: 38.12, lng: 34.16 },
+                { id: 7, name: "Nemrut Dağı (Bitlis)", lat: 38.65, lng: 42.23 },
+                { id: 8, name: "Süphan Dağı", lat: 38.92, lng: 42.82 }
             ],
             ovalar: [
-                { id: 1, name: "Çukurova", lat: 36.8, lng: 35.3 },
-                { id: 2, name: "Bafra Ovası", lat: 41.6, lng: 35.9 },
-                { id: 3, name: "Çarşamba Ovası", lat: 41.3, lng: 36.7 },
-                { id: 4, name: "Konya Ovası", lat: 37.8, lng: 32.5 }
+                { id: 101, name: "Çukurova", lat: 36.8, lng: 35.3 },
+                { id: 102, name: "Bafra Ovası", lat: 41.6, lng: 35.9 },
+                { id: 103, name: "Çarşamba Ovası", lat: 41.3, lng: 36.7 },
+                { id: 104, name: "Konya Ovası", lat: 37.8, lng: 32.5 },
+                { id: 105, name: "Gediz Ovası", lat: 38.6, lng: 27.8 },
+                { id: 106, name: "Altınbaşak Ovası", lat: 37.1, lng: 38.9 }
+            ],
+            platolar: [
+                { id: 201, name: "Haymana Platosu", lat: 39.4, lng: 32.5 },
+                { id: 202, name: "Obruk Platosu", lat: 38.2, lng: 33.2 },
+                { id: 203, name: "Teke Platosu", lat: 36.6, lng: 29.8 },
+                { id: 204, name: "Taşeli Platosu", lat: 36.4, lng: 32.8 },
+                { id: 205, name: "Erzurum-Kars Platosu", lat: 40.3, lng: 42.5 }
+            ],
+            goller: [
+                { id: 301, name: "Van Gölü", lat: 38.6, lng: 42.9 },
+                { id: 302, name: "Tuz Gölü", lat: 38.8, lng: 33.3 },
+                { id: 303, name: "Beyşehir Gölü", lat: 37.7, lng: 31.5 },
+                { id: 304, name: "Eğirdir Gölü", lat: 38.1, lng: 30.9 },
+                { id: 305, name: "İznik Gölü", lat: 40.4, lng: 29.5 },
+                { id: 306, name: "Bafa Gölü", lat: 37.5, lng: 27.4 }
             ],
             sehirler: [
-                { id: 1, name: "İstanbul", lat: 41.0082, lng: 28.9784 },
-                { id: 2, name: "Ankara", lat: 39.9334, lng: 32.8597 },
-                { id: 3, name: "İzmir", lat: 38.4237, lng: 27.1428 },
-                { id: 4, name: "Antalya", lat: 36.8969, lng: 30.7133 },
-                { id: 5, name: "Diyarbakır", lat: 37.9144, lng: 40.2110 },
-                { id: 6, name: "Trabzon", lat: 41.0027, lng: 39.7168 }
+                { id: 401, name: "İstanbul", lat: 41.0082, lng: 28.9784 },
+                { id: 402, name: "Ankara", lat: 39.9334, lng: 32.8597 },
+                { id: 403, name: "İzmir", lat: 38.4237, lng: 27.1428 },
+                { id: 404, name: "Antalya", lat: 36.8969, lng: 30.7133 },
+                { id: 405, name: "Diyarbakır", lat: 37.9144, lng: 40.2110 },
+                { id: 406, name: "Trabzon", lat: 41.0027, lng: 39.7168 },
+                { id: 407, name: "Eskişehir", lat: 39.7767, lng: 30.5206 },
+                { id: 408, name: "Gaziantep", lat: 37.0662, lng: 37.3833 }
             ]
         };
 
         const rawTarih = [
             { text: "Osmanlı'nın ilk başkenti Bursa'dır.", answer: false, explanation: "Osmanlı'nın ilk başkenti Söğüt ve Bilecik çevresidir." },
-            { text: "Cumhuriyet 29 Ekim 1923'te ilan edilmiştir.", answer: true, explanation: "Türkiye Büyük Millet Meclisi tarafından ilan edilmiştir." }
+            { text: "Cumhuriyet 29 Ekim 1923'te ilan edilmiştir.", answer: true, explanation: "Türkiye Büyük Millet Meclisi tarafından ilan edilmiştir." },
+            { text: "Lozan Antlaşması 1923 yılında imzalanmıştır.", answer: true, explanation: "24 Temmuz 1923'te İsviçre'nin Lozan şehrinde imzalandı." },
+            { text: "Sivas Kongresi bölgesel bir kongredir.", answer: false, explanation: "Sivas Kongresi hem toplanış hem karar bakımından ulusaldır." },
+            { text: "Misak-ı Milli kararları son Osmanlı Mebusan Meclisi'nde kabul edilmiştir.", answer: true, explanation: "28 Ocak 1920'de gizli oturumda kabul edildi." },
+            { text: "Saltanat 1924 yılında kaldırılmıştır.", answer: false, explanation: "Saltanat 1 Kasım 1922'de kaldırılmıştır." },
+            { text: "Büyük Taarruz 'Ordular ilk hedefiniz Akdeniz'dir' emriyle başlamıştır.", answer: true, explanation: "Dumlupınar Meydan Muharebesi sonrası bu emir verilmiştir." }
         ];
 
         const rawCografya = [
             { text: "Türkiye'nin en yüksek dağı Ağrı Dağı'dır.", answer: true, explanation: "Ağrı Dağı 5137 metre yüksekliğindedir." },
-            { text: "İzmir, Marmara Bölgesi'ndedir.", answer: false, explanation: "İzmir, Ege Bölgesi'ndedir." }
+            { text: "İzmir, Marmara Bölgesi'ndedir.", answer: false, explanation: "İzmir, Ege Bölgesi'ndedir." },
+            { text: "Türkiye'nin en uzun sınır komşusu Suriye'dir.", answer: true, explanation: "Suriye sınırı yaklaşık 911 km uzunluğundadır." },
+            { text: "Maden çeşitliliğinin en fazla olduğu bölge Karadeniz'dir.", answer: false, explanation: "Maden çeşitliliği en fazla Doğu Anadolu (Yukarı Fırat Bölümü) bölgesidir." },
+            { text: "Kuzey Anadolu Fay Hattı Türkiye'nin en aktif fay hattıdır.", answer: true, explanation: "Saros Körfezi'nden başlar ve Ermenistan sınırına kadar uzanır." },
+            { text: "Antalya'da kış ılıklığı görülmez.", answer: false, explanation: "Akdeniz iklimi etkisiyle Antalya'da kışlar ılık ve yağışlı geçer." },
+            { text: "Tuz Gölü Türkiye'nin en büyük gölüdür.", answer: false, explanation: "Türkiye'nin en büyük gölü Van Gölü'dür." }
         ];
 
         let map, currentMarkerLayer;
@@ -302,7 +345,6 @@
                 maxBounds: [[35.0, 25.0], [43.0, 46.0]]
             });
 
-            // Dark Matter Katmanı
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
                 attribution: '© OpenStreetMap'
             }).addTo(map);
@@ -318,6 +360,8 @@
         function switchTab(tab) {
             document.getElementById('content-cats').classList.toggle('hidden', tab !== 'cats');
             document.getElementById('content-history').classList.toggle('hidden', tab !== 'history');
+            document.getElementById('tab-cats').className = `flex-1 py-3 text-sm font-bold border-b-2 ${tab === 'cats' ? 'border-amber-500 bg-slate-800/50' : 'border-transparent hover:bg-slate-800/30'}`;
+            document.getElementById('tab-history').className = `flex-1 py-3 text-sm font-bold border-b-2 ${tab === 'history' ? 'border-amber-500 bg-slate-800/50' : 'border-transparent hover:bg-slate-800/30'}`;
         }
 
         function selectCategory(cat) {
@@ -325,6 +369,11 @@
             currentCategory = cat;
             document.getElementById('game-container').classList.remove('hidden');
             document.getElementById('map-container').classList.add('hidden');
+            
+            // Aktif sınıfı güncelle
+            document.querySelectorAll('.category-card').forEach(el => el.classList.remove('active'));
+            document.getElementById(`cat-${cat}`).classList.add('active');
+            
             restartCategory();
             toggleSidebar();
         }
@@ -335,6 +384,10 @@
             document.getElementById('game-container').classList.add('hidden');
             document.getElementById('map-container').classList.remove('hidden');
             
+            // Aktif sınıfı güncelle
+            document.querySelectorAll('.category-card').forEach(el => el.classList.remove('active'));
+            document.getElementById(`cat-map-${type}`).classList.add('active');
+
             setTimeout(() => {
                 initLeafletMap();
                 map.invalidateSize();
@@ -350,8 +403,8 @@
             mapData[currentMapType].forEach(item => {
                 const icon = L.divIcon({
                     className: 'custom-div-icon',
-                    iconSize: [20, 20],
-                    iconAnchor: [10, 10]
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12]
                 });
 
                 const marker = L.marker([item.lat, item.lng], { icon: icon }).addTo(currentMarkerLayer);
@@ -374,7 +427,7 @@
             if (clickedItem.id === currentMapItem.id) {
                 marker.getElement().classList.add('correct-marker');
                 showFeedback(`${clickedItem.name} DOĞRU ✓`, true);
-                setTimeout(nextMapItem, 1000);
+                setTimeout(nextMapItem, 800);
             } else {
                 showFeedback("YANLIŞ KONUM!", false);
             }
@@ -433,16 +486,25 @@
             const interval = setInterval(() => {
                 time--;
                 timer.innerText = time;
-                if (time <= 0) { clearInterval(interval); overlay.classList.add('hidden'); callback(); }
+                if (time <= 0) { 
+                    clearInterval(interval); 
+                    overlay.classList.add('hidden'); 
+                    callback(); 
+                }
             }, 800);
         }
 
         function showResult(isCorrect, q) {
             if (isCorrect) score++;
             const modal = document.getElementById('result-modal');
+            const border = document.getElementById('modal-border');
             modal.classList.remove('hidden');
+            
             document.getElementById('result-icon').innerHTML = isCorrect ? '🎯' : '💡';
             document.getElementById('result-title').innerText = isCorrect ? 'HARİKA!' : 'DİKKAT!';
+            document.getElementById('result-title').className = `text-3xl font-black mb-4 italic tracking-tight ${isCorrect ? 'text-emerald-400' : 'text-amber-500'}`;
+            border.style.borderColor = isCorrect ? '#10b981' : '#f59e0b';
+            
             document.getElementById('result-explanation').innerText = q.explanation;
         }
 
@@ -455,8 +517,13 @@
         function toggleAds() {
             adsEnabled = !adsEnabled;
             const btn = document.getElementById('no-ads-btn');
-            btn.className = adsEnabled ? "bg-amber-600/10 text-amber-500..." : "bg-emerald-600 text-white...";
-            btn.innerHTML = adsEnabled ? '<i class="fas fa-bolt mr-2"></i>REKLAMLARI KALDIR' : '<i class="fas fa-check-circle mr-2"></i>REKLAMLAR KAPALI';
+            if(adsEnabled) {
+                btn.className = "bg-amber-600/10 text-amber-500 border border-amber-500/30 px-6 py-3 rounded-2xl text-sm font-bold hover:bg-amber-600 hover:text-white transition-all shadow-lg";
+                btn.innerHTML = '<i class="fas fa-bolt mr-2"></i>REKLAMLARI KALDIR';
+            } else {
+                btn.className = "bg-emerald-600 text-white px-6 py-3 rounded-2xl text-sm font-bold hover:bg-emerald-500 transition-all shadow-lg";
+                btn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>REKLAMLAR KAPALI';
+            }
         }
 
         window.onload = () => restartCategory();
