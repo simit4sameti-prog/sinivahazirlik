@@ -1,85 +1,297 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPSS & YKS - Akademi Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Leaflet.js CSS ve JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="min-h-screen flex flex-col items-center">
 
-body {
-    font-family: 'Outfit', sans-serif;
-    background: #0f172a;
-    color: white;
-    overflow-x: hidden;
-    overflow-y: auto;
-}
+    <!-- SOL SİDEBAR -->
+    <div id="sidebar" class="sidebar fixed top-0 left-0 h-full w-80 z-[60] transform -translate-x-full shadow-2xl flex flex-col">
+        <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-900">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-graduation-cap text-amber-500 text-xl"></i>
+                <h2 class="text-xl font-bold text-white">Akademi Panel</h2>
+            </div>
+            <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+        </div>
+        
+        <div class="flex border-b border-slate-700">
+            <button onclick="switchTab('cats')" id="tab-cats" class="flex-1 py-3 text-sm font-bold border-b-2 border-amber-500 bg-slate-800/50">Kategoriler</button>
+            <button onclick="switchTab('history')" id="tab-history" class="flex-1 py-3 text-sm font-bold border-b-2 border-transparent hover:bg-slate-800/30">Geçmiş</button>
+        </div>
 
-.card-gradient {
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
+        <div id="content-cats" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+            <div onclick="showHome()" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500">
+                    <i class="fas fa-home"></i>
+                </div>
+                <h3 class="font-bold text-sm">Ana Sayfa</h3>
+            </div>
 
-.sidebar {
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    background: #1e293b;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-}
+            <div class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-4">Soru Bankası</div>
+            <div onclick="selectCategory('tarih')" id="cat-tarih" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center text-red-500">
+                    <i class="fas fa-history"></i>
+                </div>
+                <h3 class="font-bold text-sm">Tarih</h3>
+            </div>
+            <div onclick="selectCategory('cografya')" id="cat-cografya" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
+                <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-500">
+                    <i class="fas fa-atlas"></i>
+                </div>
+                <h3 class="font-bold text-sm">Coğrafya</h3>
+            </div>
 
-.category-card {
-    transition: all 0.3s ease;
-    cursor: pointer;
-    border: 2px solid transparent;
-}
+            <div class="text-xs font-bold text-amber-500 uppercase tracking-widest mt-4">Harita Atölyesi</div>
+            <div onclick="selectMap('daglar')" id="cat-map-daglar" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
+                <i class="fas fa-mountain text-emerald-500"></i>
+                <h3 class="font-bold text-sm">Dağlar</h3>
+            </div>
+            <div onclick="selectMap('ovalar')" id="cat-map-ovalar" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
+                <i class="fas fa-vector-square text-orange-500"></i>
+                <h3 class="font-bold text-sm">Ovalar</h3>
+            </div>
+            <div onclick="selectMap('platolar')" id="cat-map-platolar" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
+                <i class="fas fa-layer-group text-purple-500"></i>
+                <h3 class="font-bold text-sm">Platolar</h3>
+            </div>
+            <div onclick="selectMap('goller')" id="cat-map-goller" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
+                <i class="fas fa-tint text-cyan-500"></i>
+                <h3 class="font-bold text-sm">Göller</h3>
+            </div>
+            <div onclick="selectMap('sehirler')" id="cat-map-sehirler" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
+                <i class="fas fa-map-marker-alt text-amber-500"></i>
+                <h3 class="font-bold text-sm">Şehirler</h3>
+            </div>
+        </div>
 
-.category-card:hover {
-    transform: translateY(-5px);
-    background: rgba(255, 255, 255, 0.05);
-}
+        <div id="content-history" class="hidden flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+            <div id="history-list" class="space-y-2"></div>
+        </div>
+    </div>
 
-.category-card.active {
-    border-color: #f59e0b;
-    background: rgba(245, 158, 11, 0.1);
-}
+    <!-- Üst Bar -->
+    <div class="fixed top-0 w-full p-4 flex justify-between items-center z-50 max-w-7xl mx-auto">
+        <button onclick="toggleSidebar()" class="bg-slate-800/90 backdrop-blur p-4 rounded-2xl border border-slate-700 shadow-xl">
+            <i class="fas fa-bars text-xl text-amber-500"></i>
+        </button>
+        <div class="flex gap-4">
+            <div class="bg-slate-800/90 px-6 py-3 rounded-2xl border border-slate-700 flex items-center gap-3">
+                <i class="fas fa-fire text-orange-500"></i>
+                <span class="font-bold">Seri: <span id="streak">0</span></span>
+            </div>
+            <button onclick="showStats()" class="hidden md:flex bg-slate-800/90 px-4 py-3 rounded-2xl border border-slate-700 items-center gap-3 hover:bg-slate-700">
+                <i class="fas fa-chart-pie text-cyan-500"></i>
+            </button>
+        </div>
+        <button onclick="toggleAds()" id="no-ads-btn" class="bg-amber-600/10 text-amber-500 border border-amber-500/30 px-6 py-3 rounded-2xl text-sm font-bold shadow-lg hidden md:block">
+            <i class="fas fa-bolt mr-2"></i>REKLAMLARI KALDIR
+        </button>
+    </div>
 
-.ad-overlay {
-    background: rgba(0, 0, 0, 0.95);
-    backdrop-filter: blur(10px);
-}
+    <!-- 1. ANA PANEL (HOME) -->
+    <div id="home-view" class="w-full max-w-6xl mt-24 px-4 pb-12 animate-in fade-in duration-500">
+        <div class="text-center mb-12">
+            <h1 class="text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-4">
+                KPSS <span class="text-amber-500 underline decoration-amber-500/30">AKADEMİ</span> PRO
+            </h1>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto font-medium leading-relaxed">
+                KPSS ve YKS sınavlarına hazırlanırken interaktif haritalar ve 100'lerce soruyla bilgini tazele.
+            </p>
+        </div>
 
-.custom-scrollbar::-webkit-scrollbar { width: 5px; }
-.custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <!-- Soru Bankası Paneli -->
+            <div class="card-gradient p-8 rounded-[3rem] border border-slate-700/50 shadow-2xl">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-500 text-2xl">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-black uppercase italic">Soru Bankası</h2>
+                        <p class="text-slate-500 text-sm font-bold tracking-widest uppercase">Doğru / Yanlış Modu</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 gap-4">
+                    <button onclick="selectCategory('tarih')" class="glass-btn p-6 rounded-3xl flex items-center justify-between group">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-landmark text-red-500 text-xl"></i>
+                            <span class="font-black text-lg">TARİH</span>
+                        </div>
+                        <span class="text-xs font-bold text-slate-500">50 SORU</span>
+                    </button>
+                    <button onclick="selectCategory('cografya')" class="glass-btn p-6 rounded-3xl flex items-center justify-between group">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-globe-americas text-blue-500 text-xl"></i>
+                            <span class="font-black text-lg">COĞRAFYA</span>
+                        </div>
+                        <span class="text-xs font-bold text-slate-500">50 SORU</span>
+                    </button>
+                </div>
+            </div>
 
-#leaflet-map {
-    height: 60vh;
-    width: 100%;
-    border-radius: 2rem;
-    z-index: 10;
-    background: #0f172a;
-}
+            <!-- Harita Atölyesi Paneli -->
+            <div class="card-gradient p-8 rounded-[3rem] border border-slate-700/50 shadow-2xl">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-14 h-14 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-500 text-2xl">
+                        <i class="fas fa-map"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-black uppercase italic">Harita Atölyesi</h2>
+                        <p class="text-slate-500 text-sm font-bold tracking-widest uppercase">Yerleştirme Modu</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="selectMap('daglar')" class="glass-btn p-4 rounded-2xl flex flex-col items-center gap-2">
+                        <i class="fas fa-mountain text-emerald-500"></i>
+                        <span class="text-xs font-black uppercase">DAĞLAR</span>
+                    </button>
+                    <button onclick="selectMap('ovalar')" class="glass-btn p-4 rounded-2xl flex flex-col items-center gap-2">
+                        <i class="fas fa-vector-square text-orange-500"></i>
+                        <span class="text-xs font-black uppercase">OVALAR</span>
+                    </button>
+                    <button onclick="selectMap('platolar')" class="glass-btn p-4 rounded-2xl flex flex-col items-center gap-2">
+                        <i class="fas fa-layer-group text-purple-500"></i>
+                        <span class="text-xs font-black uppercase">PLATOLAR</span>
+                    </button>
+                    <button onclick="selectMap('sehirler')" class="glass-btn p-4 rounded-2xl flex flex-col items-center gap-2">
+                        <i class="fas fa-city text-amber-500"></i>
+                        <span class="text-xs font-black uppercase">ŞEHİRLER</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-.custom-div-icon {
-    background: rgba(245, 158, 11, 0.5);
-    border: 2px solid #f59e0b;
-    border-radius: 50%;
-    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
-    transition: all 0.3s;
-}
-.correct-marker {
-    background: #10b981 !important;
-    border-color: white !important;
-    box-shadow: 0 0 20px #10b981 !important;
-}
+    <!-- 2. QUIZ ALANI -->
+    <div id="game-container" class="w-full max-w-lg mt-24 hidden px-4 pb-12">
+        <div class="text-center mb-8">
+            <div id="active-category-label" class="inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-3"></div>
+            <h1 class="text-4xl md:text-5xl font-black tracking-tighter uppercase italic">SINAV <span class="text-amber-500">MODU</span></h1>
+        </div>
 
-.pulse { animation: pulse-animation 2s infinite; }
-@keyframes pulse-animation { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        <div id="test-view">
+            <div class="flex justify-between items-end mb-4 px-2">
+                <span class="text-sm font-black bg-slate-800 px-4 py-1.5 rounded-xl border border-slate-700">
+                    SORU <span id="current-q" class="text-amber-500">1</span> / <span id="total-q">50</span>
+                </span>
+                <span class="text-sm font-black text-emerald-400 bg-emerald-400/10 px-4 py-1.5 rounded-xl border border-emerald-400/20">
+                    PUAN: <span id="score">0</span>
+                </span>
+            </div>
 
-.glass-btn {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s;
-}
-.glass-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: #f59e0b;
-}
+            <!-- Timer Bar -->
+            <div class="w-full bg-slate-800 h-2 rounded-full mb-4 overflow-hidden border border-slate-700">
+                 <div id="timer-bar-inner" class="h-full bg-emerald-500 timer-bar" style="width: 100%"></div>
+            </div>
 
-/* Timer Bar Animation */
-.timer-bar {
-    transition: width 1s linear;
-}
+            <div class="w-full bg-slate-800 h-2 rounded-full mb-10 overflow-hidden border border-slate-700">
+                <div id="progress" class="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500" style="width: 2%"></div>
+            </div>
+
+            <div id="question-card" class="card-gradient p-10 rounded-[3rem] shadow-2xl relative min-h-[380px] flex flex-col justify-center text-center">
+                <div id="question-text" class="text-xl md:text-2xl font-bold leading-tight mb-12 text-white"></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <button onclick="handleAnswer(true)" class="bg-emerald-600 hover:bg-emerald-500 transition-all py-6 rounded-3xl font-black text-xl shadow-xl flex items-center justify-center gap-3 active:scale-95">
+                        <i class="fas fa-check-circle"></i> DOĞRU
+                    </button>
+                    <button onclick="handleAnswer(false)" class="bg-rose-600 hover:bg-rose-500 transition-all py-6 rounded-3xl font-black text-xl shadow-xl flex items-center justify-center gap-3 active:scale-95">
+                        <i class="fas fa-times-circle"></i> YANLIŞ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. HARİTA ALANI -->
+    <div id="map-container" class="w-full max-w-6xl mt-24 hidden px-4 pb-12">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-black text-white italic uppercase">TÜRKİYE <span class="text-amber-500">ETKİLEŞİMLİ</span> HARİTA</h1>
+            <div id="map-instruction" class="mt-4 text-amber-500 font-black bg-amber-500/10 inline-flex items-center gap-3 px-8 py-3 rounded-2xl border border-amber-500/30 shadow-xl uppercase tracking-widest text-lg"></div>
+        </div>
+
+        <div class="relative bg-slate-900/60 p-4 rounded-[3rem] border border-slate-700/50 shadow-2xl overflow-hidden backdrop-blur-sm">
+            <div id="leaflet-map"></div>
+            <div id="map-feedback" class="absolute bottom-12 left-1/2 -translate-x-1/2 bg-slate-900/95 px-10 py-5 rounded-3xl border-2 border-amber-500/50 hidden backdrop-blur-xl shadow-2xl z-[1000]">
+                <span id="feedback-text" class="text-2xl font-black"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modallar -->
+    <div id="ad-overlay" class="ad-overlay fixed inset-0 z-[100] flex flex-col items-center justify-center p-6 hidden">
+        <div class="text-center max-w-sm">
+            <div class="relative inline-block mb-8">
+                <i class="fas fa-spinner fa-spin text-8xl text-amber-500 opacity-20"></i>
+                <i class="fas fa-brain text-5xl text-amber-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pulse"></i>
+            </div>
+            <h2 class="text-3xl font-black italic mb-6 uppercase">ANALİZ EDİLİYOR...</h2>
+            <div id="ad-timer" class="text-2xl font-black text-white bg-slate-800 w-20 h-20 flex items-center justify-center rounded-full border-4 border-amber-500 mx-auto mb-6">3</div>
+        </div>
+    </div>
+
+    <div id="result-modal" class="ad-overlay fixed inset-0 z-[105] flex flex-col items-center justify-center p-6 hidden">
+        <div class="card-gradient p-10 rounded-[3rem] max-w-md w-full text-center border-t-8 shadow-2xl" id="modal-border">
+            <div id="result-icon" class="text-7xl mb-6"></div>
+            <h3 id="result-title" class="text-3xl font-black mb-4 italic tracking-tight"></h3>
+            <div class="bg-slate-900/60 p-8 rounded-[2rem] mb-10 border border-slate-700 shadow-inner">
+                <p id="result-explanation" class="text-slate-200 text-lg leading-relaxed font-medium italic"></p>
+            </div>
+            <button onclick="nextQuestion()" class="w-full bg-amber-500 text-slate-900 font-black py-5 rounded-3xl hover:bg-amber-400 transition-all uppercase tracking-widest text-lg">DEVAM ET</button>
+        </div>
+    </div>
+
+    <div id="finish-modal" class="ad-overlay fixed inset-0 z-[110] flex flex-col items-center justify-center p-6 hidden">
+        <div class="card-gradient p-12 rounded-[4rem] max-w-md w-full text-center shadow-2xl">
+            <div class="w-24 h-24 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-8">
+                <i class="fas fa-award text-6xl text-amber-500"></i>
+            </div>
+            <h2 class="text-4xl font-black italic mb-10 uppercase">BİTTİ!</h2>
+            <div class="bg-slate-900 py-6 px-10 rounded-3xl mb-10 border border-slate-700">
+                <p id="final-score" class="text-6xl font-black text-amber-500 tracking-tighter"></p>
+            </div>
+            <button onclick="showHome()" class="w-full bg-white text-slate-900 font-black py-5 rounded-3xl hover:bg-slate-200 transition-all uppercase text-lg">ANA MENÜ</button>
+        </div>
+    </div>
+    
+    <!-- Stats Modal -->
+    <div id="stats-modal" class="ad-overlay fixed inset-0 z-[120] flex flex-col items-center justify-center p-6 hidden">
+        <div class="card-gradient p-10 rounded-[3rem] max-w-md w-full text-center border shadow-2xl relative">
+            <button onclick="closeStats()" class="absolute top-6 right-6 text-slate-400 hover:text-white">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+            <h2 class="text-3xl font-black italic mb-8 uppercase text-cyan-500">İSTATİSTİKLER</h2>
+            
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
+                    <div class="text-4xl font-black text-white mb-2" id="stat-total">0</div>
+                    <div class="text-xs font-bold text-slate-400 uppercase">Çözülen Soru</div>
+                </div>
+                <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
+                    <div class="text-4xl font-black text-emerald-400 mb-2" id="stat-rate">%0</div>
+                    <div class="text-xs font-bold text-slate-400 uppercase">Doğruluk</div>
+                </div>
+                <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 col-span-2">
+                    <div class="text-4xl font-black text-orange-500 mb-2" id="stat-streak">0</div>
+                    <div class="text-xs font-bold text-slate-400 uppercase">Mevcut Seri</div>
+                </div>
+            </div>
+            
+            <div class="text-xs text-slate-500">Veriler tarayıcınızda saklanmaktadır.</div>
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
