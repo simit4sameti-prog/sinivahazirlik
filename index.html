@@ -1,297 +1,372 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KPSS & YKS - Akademi Pro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Leaflet.js CSS ve JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body class="min-h-screen flex flex-col items-center">
+let map, markerLayer;
+let currentMode = 'home';
+let currentCategory = '';
+let currentMapType = '';
+let score = 0;
+let currentIndex = 0;
+let activeQuestions = [];
+let itemsToFind = [];
+let targetItem = null;
+let adsEnabled = true;
+let streak = 0;
+let historyData = [];
 
-    <!-- SOL SİDEBAR -->
-    <div id="sidebar" class="sidebar fixed top-0 left-0 h-full w-80 z-[60] transform -translate-x-full shadow-2xl flex flex-col">
-        <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-900">
-            <div class="flex items-center gap-3">
-                <i class="fas fa-graduation-cap text-amber-500 text-xl"></i>
-                <h2 class="text-xl font-bold text-white">Akademi Panel</h2>
-            </div>
-            <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white">
-                <i class="fas fa-times text-2xl"></i>
-            </button>
-        </div>
-        
-        <div class="flex border-b border-slate-700">
-            <button onclick="switchTab('cats')" id="tab-cats" class="flex-1 py-3 text-sm font-bold border-b-2 border-amber-500 bg-slate-800/50">Kategoriler</button>
-            <button onclick="switchTab('history')" id="tab-history" class="flex-1 py-3 text-sm font-bold border-b-2 border-transparent hover:bg-slate-800/30">Geçmiş</button>
-        </div>
+// Persistence Keys
+const STORAGE_KEY_SCORE = 'kpss_score';
+const STORAGE_KEY_STREAK = 'kpss_streak';
+const STORAGE_KEY_HISTORY = 'kpss_history';
 
-        <div id="content-cats" class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-            <div onclick="showHome()" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
-                <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-500">
-                    <i class="fas fa-home"></i>
-                </div>
-                <h3 class="font-bold text-sm">Ana Sayfa</h3>
-            </div>
+// Audio Context
+let audioCtx;
 
-            <div class="text-xs font-bold text-slate-500 uppercase tracking-widest mt-4">Soru Bankası</div>
-            <div onclick="selectCategory('tarih')" id="cat-tarih" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
-                <div class="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center text-red-500">
-                    <i class="fas fa-history"></i>
-                </div>
-                <h3 class="font-bold text-sm">Tarih</h3>
-            </div>
-            <div onclick="selectCategory('cografya')" id="cat-cografya" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
-                <div class="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-500">
-                    <i class="fas fa-atlas"></i>
-                </div>
-                <h3 class="font-bold text-sm">Coğrafya</h3>
-            </div>
+function initAudio() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
 
-            <div class="text-xs font-bold text-amber-500 uppercase tracking-widest mt-4">Harita Atölyesi</div>
-            <div onclick="selectMap('daglar')" id="cat-map-daglar" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
-                <i class="fas fa-mountain text-emerald-500"></i>
-                <h3 class="font-bold text-sm">Dağlar</h3>
-            </div>
-            <div onclick="selectMap('ovalar')" id="cat-map-ovalar" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
-                <i class="fas fa-vector-square text-orange-500"></i>
-                <h3 class="font-bold text-sm">Ovalar</h3>
-            </div>
-            <div onclick="selectMap('platolar')" id="cat-map-platolar" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
-                <i class="fas fa-layer-group text-purple-500"></i>
-                <h3 class="font-bold text-sm">Platolar</h3>
-            </div>
-            <div onclick="selectMap('goller')" id="cat-map-goller" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
-                <i class="fas fa-tint text-cyan-500"></i>
-                <h3 class="font-bold text-sm">Göller</h3>
-            </div>
-            <div onclick="selectMap('sehirler')" id="cat-map-sehirler" class="category-card p-4 rounded-2xl bg-slate-800/50 flex items-center gap-4">
-                <i class="fas fa-map-marker-alt text-amber-500"></i>
-                <h3 class="font-bold text-sm">Şehirler</h3>
-            </div>
-        </div>
+function playSound(type) {
+    if (!audioCtx) initAudio();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
 
-        <div id="content-history" class="hidden flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
-            <div id="history-list" class="space-y-2"></div>
-        </div>
-    </div>
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
 
-    <!-- Üst Bar -->
-    <div class="fixed top-0 w-full p-4 flex justify-between items-center z-50 max-w-7xl mx-auto">
-        <button onclick="toggleSidebar()" class="bg-slate-800/90 backdrop-blur p-4 rounded-2xl border border-slate-700 shadow-xl">
-            <i class="fas fa-bars text-xl text-amber-500"></i>
-        </button>
-        <div class="flex gap-4">
-            <div class="bg-slate-800/90 px-6 py-3 rounded-2xl border border-slate-700 flex items-center gap-3">
-                <i class="fas fa-fire text-orange-500"></i>
-                <span class="font-bold">Seri: <span id="streak">0</span></span>
-            </div>
-            <button onclick="showStats()" class="hidden md:flex bg-slate-800/90 px-4 py-3 rounded-2xl border border-slate-700 items-center gap-3 hover:bg-slate-700">
-                <i class="fas fa-chart-pie text-cyan-500"></i>
-            </button>
-        </div>
-        <button onclick="toggleAds()" id="no-ads-btn" class="bg-amber-600/10 text-amber-500 border border-amber-500/30 px-6 py-3 rounded-2xl text-sm font-bold shadow-lg hidden md:block">
-            <i class="fas fa-bolt mr-2"></i>REKLAMLARI KALDIR
-        </button>
-    </div>
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
 
-    <!-- 1. ANA PANEL (HOME) -->
-    <div id="home-view" class="w-full max-w-6xl mt-24 px-4 pb-12 animate-in fade-in duration-500">
-        <div class="text-center mb-12">
-            <h1 class="text-5xl md:text-7xl font-black italic tracking-tighter uppercase mb-4">
-                KPSS <span class="text-amber-500 underline decoration-amber-500/30">AKADEMİ</span> PRO
-            </h1>
-            <p class="text-slate-400 text-lg max-w-2xl mx-auto font-medium leading-relaxed">
-                KPSS ve YKS sınavlarına hazırlanırken interaktif haritalar ve 100'lerce soruyla bilgini tazele.
-            </p>
-        </div>
+    if (type === 'success') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+        osc.frequency.exponentialRampToValueAtTime(1174.66, audioCtx.currentTime + 0.1); // D6
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+    } else if (type === 'error') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+    }
+}
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-            <!-- Soru Bankası Paneli -->
-            <div class="card-gradient p-8 rounded-[3rem] border border-slate-700/50 shadow-2xl">
-                <div class="flex items-center gap-4 mb-8">
-                    <div class="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-500 text-2xl">
-                        <i class="fas fa-book-open"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-2xl font-black uppercase italic">Soru Bankası</h2>
-                        <p class="text-slate-500 text-sm font-bold tracking-widest uppercase">Doğru / Yanlış Modu</p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 gap-4">
-                    <button onclick="selectCategory('tarih')" class="glass-btn p-6 rounded-3xl flex items-center justify-between group">
-                        <div class="flex items-center gap-4">
-                            <i class="fas fa-landmark text-red-500 text-xl"></i>
-                            <span class="font-black text-lg">TARİH</span>
-                        </div>
-                        <span class="text-xs font-bold text-slate-500">50 SORU</span>
-                    </button>
-                    <button onclick="selectCategory('cografya')" class="glass-btn p-6 rounded-3xl flex items-center justify-between group">
-                        <div class="flex items-center gap-4">
-                            <i class="fas fa-globe-americas text-blue-500 text-xl"></i>
-                            <span class="font-black text-lg">COĞRAFYA</span>
-                        </div>
-                        <span class="text-xs font-bold text-slate-500">50 SORU</span>
-                    </button>
-                </div>
-            </div>
+function loadProgress() {
+    const savedScore = localStorage.getItem(STORAGE_KEY_SCORE);
+    const savedStreak = localStorage.getItem(STORAGE_KEY_STREAK);
+    const savedHistory = localStorage.getItem(STORAGE_KEY_HISTORY);
 
-            <!-- Harita Atölyesi Paneli -->
-            <div class="card-gradient p-8 rounded-[3rem] border border-slate-700/50 shadow-2xl">
-                <div class="flex items-center gap-4 mb-8">
-                    <div class="w-14 h-14 bg-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-500 text-2xl">
-                        <i class="fas fa-map"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-2xl font-black uppercase italic">Harita Atölyesi</h2>
-                        <p class="text-slate-500 text-sm font-bold tracking-widest uppercase">Yerleştirme Modu</p>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <button onclick="selectMap('daglar')" class="glass-btn p-4 rounded-2xl flex flex-col items-center gap-2">
-                        <i class="fas fa-mountain text-emerald-500"></i>
-                        <span class="text-xs font-black uppercase">DAĞLAR</span>
-                    </button>
-                    <button onclick="selectMap('ovalar')" class="glass-btn p-4 rounded-2xl flex flex-col items-center gap-2">
-                        <i class="fas fa-vector-square text-orange-500"></i>
-                        <span class="text-xs font-black uppercase">OVALAR</span>
-                    </button>
-                    <button onclick="selectMap('platolar')" class="glass-btn p-4 rounded-2xl flex flex-col items-center gap-2">
-                        <i class="fas fa-layer-group text-purple-500"></i>
-                        <span class="text-xs font-black uppercase">PLATOLAR</span>
-                    </button>
-                    <button onclick="selectMap('sehirler')" class="glass-btn p-4 rounded-2xl flex flex-col items-center gap-2">
-                        <i class="fas fa-city text-amber-500"></i>
-                        <span class="text-xs font-black uppercase">ŞEHİRLER</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. QUIZ ALANI -->
-    <div id="game-container" class="w-full max-w-lg mt-24 hidden px-4 pb-12">
-        <div class="text-center mb-8">
-            <div id="active-category-label" class="inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-3"></div>
-            <h1 class="text-4xl md:text-5xl font-black tracking-tighter uppercase italic">SINAV <span class="text-amber-500">MODU</span></h1>
-        </div>
-
-        <div id="test-view">
-            <div class="flex justify-between items-end mb-4 px-2">
-                <span class="text-sm font-black bg-slate-800 px-4 py-1.5 rounded-xl border border-slate-700">
-                    SORU <span id="current-q" class="text-amber-500">1</span> / <span id="total-q">50</span>
-                </span>
-                <span class="text-sm font-black text-emerald-400 bg-emerald-400/10 px-4 py-1.5 rounded-xl border border-emerald-400/20">
-                    PUAN: <span id="score">0</span>
-                </span>
-            </div>
-
-            <!-- Timer Bar -->
-            <div class="w-full bg-slate-800 h-2 rounded-full mb-4 overflow-hidden border border-slate-700">
-                 <div id="timer-bar-inner" class="h-full bg-emerald-500 timer-bar" style="width: 100%"></div>
-            </div>
-
-            <div class="w-full bg-slate-800 h-2 rounded-full mb-10 overflow-hidden border border-slate-700">
-                <div id="progress" class="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500" style="width: 2%"></div>
-            </div>
-
-            <div id="question-card" class="card-gradient p-10 rounded-[3rem] shadow-2xl relative min-h-[380px] flex flex-col justify-center text-center">
-                <div id="question-text" class="text-xl md:text-2xl font-bold leading-tight mb-12 text-white"></div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <button onclick="handleAnswer(true)" class="bg-emerald-600 hover:bg-emerald-500 transition-all py-6 rounded-3xl font-black text-xl shadow-xl flex items-center justify-center gap-3 active:scale-95">
-                        <i class="fas fa-check-circle"></i> DOĞRU
-                    </button>
-                    <button onclick="handleAnswer(false)" class="bg-rose-600 hover:bg-rose-500 transition-all py-6 rounded-3xl font-black text-xl shadow-xl flex items-center justify-center gap-3 active:scale-95">
-                        <i class="fas fa-times-circle"></i> YANLIŞ
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3. HARİTA ALANI -->
-    <div id="map-container" class="w-full max-w-6xl mt-24 hidden px-4 pb-12">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-black text-white italic uppercase">TÜRKİYE <span class="text-amber-500">ETKİLEŞİMLİ</span> HARİTA</h1>
-            <div id="map-instruction" class="mt-4 text-amber-500 font-black bg-amber-500/10 inline-flex items-center gap-3 px-8 py-3 rounded-2xl border border-amber-500/30 shadow-xl uppercase tracking-widest text-lg"></div>
-        </div>
-
-        <div class="relative bg-slate-900/60 p-4 rounded-[3rem] border border-slate-700/50 shadow-2xl overflow-hidden backdrop-blur-sm">
-            <div id="leaflet-map"></div>
-            <div id="map-feedback" class="absolute bottom-12 left-1/2 -translate-x-1/2 bg-slate-900/95 px-10 py-5 rounded-3xl border-2 border-amber-500/50 hidden backdrop-blur-xl shadow-2xl z-[1000]">
-                <span id="feedback-text" class="text-2xl font-black"></span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modallar -->
-    <div id="ad-overlay" class="ad-overlay fixed inset-0 z-[100] flex flex-col items-center justify-center p-6 hidden">
-        <div class="text-center max-w-sm">
-            <div class="relative inline-block mb-8">
-                <i class="fas fa-spinner fa-spin text-8xl text-amber-500 opacity-20"></i>
-                <i class="fas fa-brain text-5xl text-amber-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pulse"></i>
-            </div>
-            <h2 class="text-3xl font-black italic mb-6 uppercase">ANALİZ EDİLİYOR...</h2>
-            <div id="ad-timer" class="text-2xl font-black text-white bg-slate-800 w-20 h-20 flex items-center justify-center rounded-full border-4 border-amber-500 mx-auto mb-6">3</div>
-        </div>
-    </div>
-
-    <div id="result-modal" class="ad-overlay fixed inset-0 z-[105] flex flex-col items-center justify-center p-6 hidden">
-        <div class="card-gradient p-10 rounded-[3rem] max-w-md w-full text-center border-t-8 shadow-2xl" id="modal-border">
-            <div id="result-icon" class="text-7xl mb-6"></div>
-            <h3 id="result-title" class="text-3xl font-black mb-4 italic tracking-tight"></h3>
-            <div class="bg-slate-900/60 p-8 rounded-[2rem] mb-10 border border-slate-700 shadow-inner">
-                <p id="result-explanation" class="text-slate-200 text-lg leading-relaxed font-medium italic"></p>
-            </div>
-            <button onclick="nextQuestion()" class="w-full bg-amber-500 text-slate-900 font-black py-5 rounded-3xl hover:bg-amber-400 transition-all uppercase tracking-widest text-lg">DEVAM ET</button>
-        </div>
-    </div>
-
-    <div id="finish-modal" class="ad-overlay fixed inset-0 z-[110] flex flex-col items-center justify-center p-6 hidden">
-        <div class="card-gradient p-12 rounded-[4rem] max-w-md w-full text-center shadow-2xl">
-            <div class="w-24 h-24 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-8">
-                <i class="fas fa-award text-6xl text-amber-500"></i>
-            </div>
-            <h2 class="text-4xl font-black italic mb-10 uppercase">BİTTİ!</h2>
-            <div class="bg-slate-900 py-6 px-10 rounded-3xl mb-10 border border-slate-700">
-                <p id="final-score" class="text-6xl font-black text-amber-500 tracking-tighter"></p>
-            </div>
-            <button onclick="showHome()" class="w-full bg-white text-slate-900 font-black py-5 rounded-3xl hover:bg-slate-200 transition-all uppercase text-lg">ANA MENÜ</button>
-        </div>
-    </div>
+    if (savedScore) score = parseInt(savedScore); // This is accumulated score, but game resets score per session usually. Let's keep it session based but maybe accumulate total? 
+    // Actually the game logic seems to reset score on restartCategory.
+    // Let's use localStorage for "High Score" or "Total XP" maybe?
+    // For now, let's keep streak persistent across sessions if we want.
     
-    <!-- Stats Modal -->
-    <div id="stats-modal" class="ad-overlay fixed inset-0 z-[120] flex flex-col items-center justify-center p-6 hidden">
-        <div class="card-gradient p-10 rounded-[3rem] max-w-md w-full text-center border shadow-2xl relative">
-            <button onclick="closeStats()" class="absolute top-6 right-6 text-slate-400 hover:text-white">
-                <i class="fas fa-times text-2xl"></i>
-            </button>
-            <h2 class="text-3xl font-black italic mb-8 uppercase text-cyan-500">İSTATİSTİKLER</h2>
-            
-            <div class="grid grid-cols-2 gap-4 mb-8">
-                <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
-                    <div class="text-4xl font-black text-white mb-2" id="stat-total">0</div>
-                    <div class="text-xs font-bold text-slate-400 uppercase">Çözülen Soru</div>
-                </div>
-                <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
-                    <div class="text-4xl font-black text-emerald-400 mb-2" id="stat-rate">%0</div>
-                    <div class="text-xs font-bold text-slate-400 uppercase">Doğruluk</div>
-                </div>
-                <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 col-span-2">
-                    <div class="text-4xl font-black text-orange-500 mb-2" id="stat-streak">0</div>
-                    <div class="text-xs font-bold text-slate-400 uppercase">Mevcut Seri</div>
-                </div>
-            </div>
-            
-            <div class="text-xs text-slate-500">Veriler tarayıcınızda saklanmaktadır.</div>
-        </div>
-    </div>
+    if (savedStreak) {
+        streak = parseInt(savedStreak);
+        document.getElementById('streak').innerText = streak;
+    }
 
-    <script src="js/data.js"></script>
-    <script src="js/app.js"></script>
-</body>
-</html>
+    if (savedHistory) {
+        historyData = JSON.parse(savedHistory);
+        updateHistoryUI();
+    }
+}
+
+function saveProgress() {
+    localStorage.setItem(STORAGE_KEY_STREAK, streak);
+    localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(historyData));
+    // We can also save total questions answered etc.
+}
+
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+
+function showHome() {
+    currentMode = 'home';
+    document.getElementById('home-view').classList.remove('hidden');
+    document.getElementById('game-container').classList.add('hidden');
+    document.getElementById('map-container').classList.add('hidden');
+    document.getElementById('finish-modal').classList.add('hidden');
+    if (window.innerWidth < 1024) document.getElementById('sidebar').classList.add('-translate-x-full'); // Ensure closed on mobile
+}
+
+// Timer Logic
+let timerInterval;
+const QUESTION_TIME = 20; // seconds
+let timeLeft = QUESTION_TIME;
+
+function startTimer() {
+    clearInterval(timerInterval);
+    timeLeft = QUESTION_TIME;
+    updateTimerUI();
+    
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerUI();
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            handleTimeOut();
+        }
+    }, 1000);
+}
+
+function updateTimerUI() {
+    const bar = document.getElementById('timer-bar-inner');
+    if (bar) {
+        const percent = (timeLeft / QUESTION_TIME) * 100;
+        bar.style.width = percent + '%';
+        if (timeLeft <= 5) {
+            bar.classList.add('bg-rose-500');
+            bar.classList.remove('bg-emerald-500');
+        } else {
+            bar.classList.add('bg-emerald-500');
+            bar.classList.remove('bg-rose-500');
+        }
+    }
+}
+
+function handleTimeOut() {
+    playSound('error');
+    handleAnswer(null, true); // Treat as wrong (null answer, timeout=true)
+}
+
+function selectCategory(cat) {
+    currentMode = 'quiz';
+    currentCategory = cat;
+    document.getElementById('home-view').classList.add('hidden');
+    document.getElementById('game-container').classList.remove('hidden');
+    document.getElementById('map-container').classList.add('hidden');
+    
+    const label = document.getElementById('active-category-label');
+    label.innerText = cat === 'tarih' ? 'TARİH SORULARI' : 'COĞRAFYA SORULARI';
+    label.className = `inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-3 ${cat === 'tarih' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`;
+    
+    restartCategory();
+    if(window.innerWidth < 1024) toggleSidebar();
+}
+
+function restartCategory() {
+    currentIndex = 0;
+    score = 0; // Session score
+    const pool = currentCategory === 'tarih' ? rawTarih : rawCografya;
+    activeQuestions = [...pool].sort(() => Math.random() - 0.5);
+    document.getElementById('total-q').innerText = activeQuestions.length;
+    document.getElementById('finish-modal').classList.add('hidden');
+    updateQuestion();
+}
+
+function updateQuestion() {
+    if (currentIndex >= activeQuestions.length) {
+        showFinish();
+        return;
+    }
+    const q = activeQuestions[currentIndex];
+    document.getElementById('question-text').innerText = q.text;
+    document.getElementById('current-q').innerText = currentIndex + 1;
+    document.getElementById('score').innerText = score;
+    document.getElementById('progress').style.width = ((currentIndex + 1) / activeQuestions.length * 100) + '%';
+    
+    startTimer();
+}
+
+function handleAnswer(choice, isTimeout = false) {
+    clearInterval(timerInterval);
+    const q = activeQuestions[currentIndex];
+    
+    let isCorrect = false;
+    if (!isTimeout) {
+        isCorrect = (choice === q.answer);
+    }
+    
+    if (isCorrect) {
+        score++;
+        streak++;
+        playSound('success');
+    } else {
+        streak = 0;
+        playSound('error');
+    }
+    document.getElementById('streak').innerText = streak;
+    saveProgress();
+
+    if (adsEnabled && (currentIndex + 1) % 5 === 0) {
+        showAd(() => showResult(isCorrect, q, isTimeout));
+    } else {
+        showResult(isCorrect, q, isTimeout);
+    }
+}
+
+function showResult(isCorrect, q, isTimeout) {
+    const modal = document.getElementById('result-modal');
+    const border = document.getElementById('modal-border');
+    modal.classList.remove('hidden');
+    
+    let title = isCorrect ? 'HARİKA, DOĞRU!' : 'ÖNEMLİ BİLGİ';
+    if (isTimeout) title = 'SÜRE DOLDU!';
+
+    document.getElementById('result-icon').innerHTML = isCorrect ? '🎯' : (isTimeout ? '⏰' : '💡');
+    document.getElementById('result-title').innerText = title;
+    document.getElementById('result-title').className = `text-3xl font-black mb-4 italic ${isCorrect ? 'text-emerald-400' : 'text-amber-500'}`;
+    border.style.borderColor = isCorrect ? '#10b981' : '#f59e0b';
+    document.getElementById('result-explanation').innerText = q.explanation;
+
+    historyData.unshift({ text: q.text, isCorrect, timestamp: new Date().toISOString() });
+    updateHistoryUI();
+}
+
+function nextQuestion() {
+    document.getElementById('result-modal').classList.add('hidden');
+    currentIndex++;
+    updateQuestion();
+}
+
+function showFinish() {
+    document.getElementById('finish-modal').classList.remove('hidden');
+    document.getElementById('final-score').innerText = score + " PUAN";
+}
+
+// --- HARİTA MODU ---
+function selectMap(type) {
+    currentMode = 'map';
+    currentMapType = type;
+    document.getElementById('home-view').classList.add('hidden');
+    document.getElementById('game-container').classList.add('hidden');
+    document.getElementById('map-container').classList.remove('hidden');
+    
+    setTimeout(() => {
+        if (!map) {
+            map = L.map('leaflet-map', { center: [39.0, 35.0], zoom: 6, minZoom: 5 });
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+            markerLayer = L.layerGroup().addTo(map);
+        }
+        map.invalidateSize();
+        startMapGame();
+    }, 100);
+    if(window.innerWidth < 1024) toggleSidebar();
+}
+
+function startMapGame() {
+    markerLayer.clearLayers();
+    itemsToFind = [...mapData[currentMapType]].sort(() => Math.random() - 0.5);
+    
+    mapData[currentMapType].forEach(item => {
+        const icon = L.divIcon({ className: 'custom-div-icon', iconSize: [24, 24], iconAnchor: [12, 12] });
+        const marker = L.marker([item.lat, item.lng], { icon: icon }).addTo(markerLayer);
+        marker.on('click', () => {
+            if (targetItem && item.id === targetItem.id) {
+                marker.getElement().classList.add('correct-marker');
+                playSound('success');
+                showMapFeedback(`${item.name} DOĞRU ✓`, true);
+                setTimeout(nextMapItem, 1000);
+            } else {
+                playSound('error');
+                showMapFeedback("YANLIŞ KONUM!", false);
+            }
+        });
+    });
+    nextMapItem();
+}
+
+function nextMapItem() {
+    if (itemsToFind.length === 0) {
+        document.getElementById('finish-modal').classList.remove('hidden');
+        document.getElementById('final-score').innerText = "HARİTA TAMAMLANDI";
+        return;
+    }
+    targetItem = itemsToFind.pop();
+    document.getElementById('map-instruction').innerHTML = `<i class="fas fa-search-location"></i> ${targetItem.name}`;
+}
+
+function showMapFeedback(text, isSuccess) {
+    const fb = document.getElementById('map-feedback');
+    const fbText = document.getElementById('feedback-text');
+    fbText.innerText = text;
+    fbText.className = isSuccess ? "text-emerald-400 font-black" : "text-rose-400 font-black text-2xl";
+    fb.classList.remove('hidden');
+    setTimeout(() => fb.classList.add('hidden'), 1500);
+}
+
+// --- DİĞER FONKSİYONLAR ---
+function toggleAds() {
+    adsEnabled = !adsEnabled;
+    const btn = document.getElementById('no-ads-btn');
+    btn.innerHTML = adsEnabled ? '<i class="fas fa-bolt mr-2"></i>REKLAMLARI KALDIR' : '<i class="fas fa-check-circle mr-2"></i>REKLAMLAR KAPALI';
+    btn.className = adsEnabled ? "bg-amber-600/10 text-amber-500 border border-amber-500/30 px-6 py-3 rounded-2xl text-sm font-bold shadow-lg" : "bg-emerald-600 text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-lg";
+}
+
+function showAd(callback) {
+    const overlay = document.getElementById('ad-overlay');
+    const timer = document.getElementById('ad-timer');
+    overlay.classList.remove('hidden');
+    let time = 3;
+    timer.innerText = time;
+    const interval = setInterval(() => {
+        time--;
+        timer.innerText = time;
+        if (time <= 0) { clearInterval(interval); overlay.classList.add('hidden'); callback(); }
+    }, 800);
+}
+
+function updateHistoryUI() {
+    const list = document.getElementById('history-list');
+    list.innerHTML = historyData.slice(0, 20).map(item => `
+        <div class="bg-slate-800/80 p-3 rounded-xl border-l-4 ${item.isCorrect ? 'border-emerald-500' : 'border-rose-500'}">
+            <p class="text-xs text-slate-200 leading-tight">${item.text}</p>
+            <div class="flex justify-between mt-2 text-[10px] text-slate-500 font-bold uppercase">
+                 <span>${item.isCorrect ? 'DOĞRU' : 'YANLIŞ'}</span>
+                 <span>${item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : ''}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function switchTab(tab) {
+    const tabCats = document.getElementById('tab-cats');
+    const tabHistory = document.getElementById('tab-history');
+    const contentCats = document.getElementById('content-cats');
+    const contentHistory = document.getElementById('content-history');
+
+    if(tab === 'cats') {
+        tabCats.classList.add('border-amber-500', 'bg-slate-800/50');
+        tabCats.classList.remove('border-transparent');
+        tabHistory.classList.remove('border-amber-500', 'bg-slate-800/50');
+        tabHistory.classList.add('border-transparent');
+        contentCats.classList.remove('hidden');
+        contentHistory.classList.add('hidden');
+    } else {
+        tabHistory.classList.add('border-amber-500', 'bg-slate-800/50');
+        tabHistory.classList.remove('border-transparent');
+        tabCats.classList.remove('border-amber-500', 'bg-slate-800/50');
+        tabCats.classList.add('border-transparent');
+        contentCats.classList.add('hidden');
+        contentHistory.classList.remove('hidden');
+    }
+}
+
+// Stats Modal Logic
+function showStats() {
+    // Calculate stats
+    const totalAnswered = historyData.length;
+    const totalCorrect = historyData.filter(x => x.isCorrect).length;
+    const accuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+    
+    document.getElementById('stat-total').innerText = totalAnswered;
+    document.getElementById('stat-rate').innerText = accuracy + '%';
+    document.getElementById('stat-streak').innerText = streak;
+    
+    document.getElementById('stats-modal').classList.remove('hidden');
+}
+
+function closeStats() {
+    document.getElementById('stats-modal').classList.add('hidden');
+}
+
+window.onload = function() {
+    showHome();
+    loadProgress();
+    
+    // Add audio init on first user interaction
+    document.body.addEventListener('click', initAudio, { once: true });
+};
