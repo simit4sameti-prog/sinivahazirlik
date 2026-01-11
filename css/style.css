@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background: #0f172a;
+    color: white;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.card-gradient {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar {
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #1e293b;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.category-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.category-card.active {
+    border-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.ad-overlay {
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(10px);
+}
+
+.custom-scrollbar::-webkit-scrollbar { width: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+#leaflet-map {
+    height: 60vh;
+    width: 100%;
+    border-radius: 2rem;
+    z-index: 10;
+    background: #0f172a;
+}
+
+.custom-div-icon {
+    background: rgba(245, 158, 11, 0.5);
+    border: 2px solid #f59e0b;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+    transition: all 0.3s;
+}
+.correct-marker {
+    background: #10b981 !important;
+    border-color: white !important;
+    box-shadow: 0 0 20px #10b981 !important;
+}
+
+.pulse { animation: pulse-animation 2s infinite; }
+@keyframes pulse-animation { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+.glass-btn {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s;
+}
+.glass-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #f59e0b;
+}
+
+/* Timer Bar Animation */
+.timer-bar {
+    transition: width 1s linear;
+}
