@@ -1,372 +1,453 @@
-let map, markerLayer;
-let currentMode = 'home';
-let currentCategory = '';
-let currentMapType = '';
-let score = 0;
-let currentIndex = 0;
-let activeQuestions = [];
-let itemsToFind = [];
-let targetItem = null;
-let adsEnabled = true;
-let streak = 0;
-let historyData = [];
-
-// Persistence Keys
-const STORAGE_KEY_SCORE = 'kpss_score';
-const STORAGE_KEY_STREAK = 'kpss_streak';
-const STORAGE_KEY_HISTORY = 'kpss_history';
-
-// Audio Context
-let audioCtx;
-
-function initAudio() {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-}
-
-function playSound(type) {
-    if (!audioCtx) initAudio();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-
-    const osc = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
-
-    osc.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-
-    if (type === 'success') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-        osc.frequency.exponentialRampToValueAtTime(1174.66, audioCtx.currentTime + 0.1); // D6
-        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.3);
-    } else if (type === 'error') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-        osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
-        gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.3);
-    }
-}
-
-function loadProgress() {
-    const savedScore = localStorage.getItem(STORAGE_KEY_SCORE);
-    const savedStreak = localStorage.getItem(STORAGE_KEY_STREAK);
-    const savedHistory = localStorage.getItem(STORAGE_KEY_HISTORY);
-
-    if (savedScore) score = parseInt(savedScore); // This is accumulated score, but game resets score per session usually. Let's keep it session based but maybe accumulate total? 
-    // Actually the game logic seems to reset score on restartCategory.
-    // Let's use localStorage for "High Score" or "Total XP" maybe?
-    // For now, let's keep streak persistent across sessions if we want.
-    
-    if (savedStreak) {
-        streak = parseInt(savedStreak);
-        document.getElementById('streak').innerText = streak;
-    }
-
-    if (savedHistory) {
-        historyData = JSON.parse(savedHistory);
-        updateHistoryUI();
-    }
-}
-
-function saveProgress() {
-    localStorage.setItem(STORAGE_KEY_STREAK, streak);
-    localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(historyData));
-    // We can also save total questions answered etc.
-}
-
-function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
-
-function showHome() {
-    currentMode = 'home';
-    document.getElementById('home-view').classList.remove('hidden');
-    document.getElementById('game-container').classList.add('hidden');
-    document.getElementById('map-container').classList.add('hidden');
-    document.getElementById('finish-modal').classList.add('hidden');
-    if (window.innerWidth < 1024) document.getElementById('sidebar').classList.add('-translate-x-full'); // Ensure closed on mobile
-}
-
-// Timer Logic
-let timerInterval;
-const QUESTION_TIME = 20; // seconds
-let timeLeft = QUESTION_TIME;
-
-function startTimer() {
-    clearInterval(timerInterval);
-    timeLeft = QUESTION_TIME;
-    updateTimerUI();
-    
-    timerInterval = setInterval(() => {
-        timeLeft--;
-        updateTimerUI();
-        if (timeLeft <= 0) {
-            clearInterval(timerInterval);
-            handleTimeOut();
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akademi Pro - Tarih & Coğrafya Ansiklopedisi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Harita & Grafikler -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+        
+        :root {
+            --primary: #f59e0b;
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
         }
-    }, 1000);
-}
 
-function updateTimerUI() {
-    const bar = document.getElementById('timer-bar-inner');
-    if (bar) {
-        const percent = (timeLeft / QUESTION_TIME) * 100;
-        bar.style.width = percent + '%';
-        if (timeLeft <= 5) {
-            bar.classList.add('bg-rose-500');
-            bar.classList.remove('bg-emerald-500');
-        } else {
-            bar.classList.add('bg-emerald-500');
-            bar.classList.remove('bg-rose-500');
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-dark);
+            color: white;
+            overflow-x: hidden;
         }
-    }
-}
 
-function handleTimeOut() {
-    playSound('error');
-    handleAnswer(null, true); // Treat as wrong (null answer, timeout=true)
-}
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: var(--bg-dark); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
 
-function selectCategory(cat) {
-    currentMode = 'quiz';
-    currentCategory = cat;
-    document.getElementById('home-view').classList.add('hidden');
-    document.getElementById('game-container').classList.remove('hidden');
-    document.getElementById('map-container').classList.add('hidden');
-    
-    const label = document.getElementById('active-category-label');
-    label.innerText = cat === 'tarih' ? 'TARİH SORULARI' : 'COĞRAFYA SORULARI';
-    label.className = `inline-block px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-3 ${cat === 'tarih' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`;
-    
-    restartCategory();
-    if(window.innerWidth < 1024) toggleSidebar();
-}
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-5px); border-color: var(--primary); box-shadow: 0 10px 30px -10px rgba(245, 158, 11, 0.3); }
 
-function restartCategory() {
-    currentIndex = 0;
-    score = 0; // Session score
-    const pool = currentCategory === 'tarih' ? rawTarih : rawCografya;
-    activeQuestions = [...pool].sort(() => Math.random() - 0.5);
-    document.getElementById('total-q').innerText = activeQuestions.length;
-    document.getElementById('finish-modal').classList.add('hidden');
-    updateQuestion();
-}
-
-function updateQuestion() {
-    if (currentIndex >= activeQuestions.length) {
-        showFinish();
-        return;
-    }
-    const q = activeQuestions[currentIndex];
-    document.getElementById('question-text').innerText = q.text;
-    document.getElementById('current-q').innerText = currentIndex + 1;
-    document.getElementById('score').innerText = score;
-    document.getElementById('progress').style.width = ((currentIndex + 1) / activeQuestions.length * 100) + '%';
-    
-    startTimer();
-}
-
-function handleAnswer(choice, isTimeout = false) {
-    clearInterval(timerInterval);
-    const q = activeQuestions[currentIndex];
-    
-    let isCorrect = false;
-    if (!isTimeout) {
-        isCorrect = (choice === q.answer);
-    }
-    
-    if (isCorrect) {
-        score++;
-        streak++;
-        playSound('success');
-    } else {
-        streak = 0;
-        playSound('error');
-    }
-    document.getElementById('streak').innerText = streak;
-    saveProgress();
-
-    if (adsEnabled && (currentIndex + 1) % 5 === 0) {
-        showAd(() => showResult(isCorrect, q, isTimeout));
-    } else {
-        showResult(isCorrect, q, isTimeout);
-    }
-}
-
-function showResult(isCorrect, q, isTimeout) {
-    const modal = document.getElementById('result-modal');
-    const border = document.getElementById('modal-border');
-    modal.classList.remove('hidden');
-    
-    let title = isCorrect ? 'HARİKA, DOĞRU!' : 'ÖNEMLİ BİLGİ';
-    if (isTimeout) title = 'SÜRE DOLDU!';
-
-    document.getElementById('result-icon').innerHTML = isCorrect ? '🎯' : (isTimeout ? '⏰' : '💡');
-    document.getElementById('result-title').innerText = title;
-    document.getElementById('result-title').className = `text-3xl font-black mb-4 italic ${isCorrect ? 'text-emerald-400' : 'text-amber-500'}`;
-    border.style.borderColor = isCorrect ? '#10b981' : '#f59e0b';
-    document.getElementById('result-explanation').innerText = q.explanation;
-
-    historyData.unshift({ text: q.text, isCorrect, timestamp: new Date().toISOString() });
-    updateHistoryUI();
-}
-
-function nextQuestion() {
-    document.getElementById('result-modal').classList.add('hidden');
-    currentIndex++;
-    updateQuestion();
-}
-
-function showFinish() {
-    document.getElementById('finish-modal').classList.remove('hidden');
-    document.getElementById('final-score').innerText = score + " PUAN";
-}
-
-// --- HARİTA MODU ---
-function selectMap(type) {
-    currentMode = 'map';
-    currentMapType = type;
-    document.getElementById('home-view').classList.add('hidden');
-    document.getElementById('game-container').classList.add('hidden');
-    document.getElementById('map-container').classList.remove('hidden');
-    
-    setTimeout(() => {
-        if (!map) {
-            map = L.map('leaflet-map', { center: [39.0, 35.0], zoom: 6, minZoom: 5 });
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-            markerLayer = L.layerGroup().addTo(map);
+        /* Navigation */
+        .nav-item { transition: all 0.3s; cursor: pointer; border-radius: 12px; }
+        .nav-item.active { background: var(--primary); color: var(--bg-dark); font-weight: 800; }
+        
+        /* Map Customization */
+        #main-map { height: 500px; border-radius: 24px; border: 2px solid rgba(255, 255, 255, 0.1); }
+        
+        /* Premium Lock Overlay */
+        .locked-feature { position: relative; overflow: hidden; }
+        .lock-overlay { 
+            position: absolute; inset: 0; background: rgba(15, 23, 42, 0.8); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 50; backdrop-filter: blur(4px);
         }
-        map.invalidateSize();
-        startMapGame();
-    }, 100);
-    if(window.innerWidth < 1024) toggleSidebar();
-}
 
-function startMapGame() {
-    markerLayer.clearLayers();
-    itemsToFind = [...mapData[currentMapType]].sort(() => Math.random() - 0.5);
-    
-    mapData[currentMapType].forEach(item => {
-        const icon = L.divIcon({ className: 'custom-div-icon', iconSize: [24, 24], iconAnchor: [12, 12] });
-        const marker = L.marker([item.lat, item.lng], { icon: icon }).addTo(markerLayer);
-        marker.on('click', () => {
-            if (targetItem && item.id === targetItem.id) {
-                marker.getElement().classList.add('correct-marker');
-                playSound('success');
-                showMapFeedback(`${item.name} DOĞRU ✓`, true);
-                setTimeout(nextMapItem, 1000);
-            } else {
-                playSound('error');
-                showMapFeedback("YANLIŞ KONUM!", false);
-            }
-        });
-    });
-    nextMapItem();
-}
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.4s ease-out forwards; }
 
-function nextMapItem() {
-    if (itemsToFind.length === 0) {
-        document.getElementById('finish-modal').classList.remove('hidden');
-        document.getElementById('final-score').innerText = "HARİTA TAMAMLANDI";
-        return;
-    }
-    targetItem = itemsToFind.pop();
-    document.getElementById('map-instruction').innerHTML = `<i class="fas fa-search-location"></i> ${targetItem.name}`;
-}
+        /* AI Chat Bubble */
+        .chat-bubble { border-radius: 18px; padding: 12px 16px; margin: 8px 0; max-width: 85%; }
+        .chat-user { background: var(--primary); color: var(--bg-dark); align-self: flex-end; border-bottom-right-radius: 4px; }
+        .chat-ai { background: var(--card-bg); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
 
-function showMapFeedback(text, isSuccess) {
-    const fb = document.getElementById('map-feedback');
-    const fbText = document.getElementById('feedback-text');
-    fbText.innerText = text;
-    fbText.className = isSuccess ? "text-emerald-400 font-black" : "text-rose-400 font-black text-2xl";
-    fb.classList.remove('hidden');
-    setTimeout(() => fb.classList.add('hidden'), 1500);
-}
+        /* Timeline */
+        .timeline-container { display: flex; flex-direction: column; gap: 20px; padding: 20px; max-height: 70vh; overflow-y: auto; }
+        .timeline-entry { display: flex; gap: 20px; position: relative; border-left: 2px solid var(--primary); padding-left: 24px; margin-bottom: 20px; }
+        .timeline-entry::before { content: ''; position: absolute; left: -7px; top: 0; width: 12px; height: 12px; background: var(--primary); border-radius: 50%; border: 2px solid var(--bg-dark); }
+        .timeline-year { font-weight: 800; color: var(--primary); min-width: 60px; }
 
-// --- DİĞER FONKSİYONLAR ---
-function toggleAds() {
-    adsEnabled = !adsEnabled;
-    const btn = document.getElementById('no-ads-btn');
-    btn.innerHTML = adsEnabled ? '<i class="fas fa-bolt mr-2"></i>REKLAMLARI KALDIR' : '<i class="fas fa-check-circle mr-2"></i>REKLAMLAR KAPALI';
-    btn.className = adsEnabled ? "bg-amber-600/10 text-amber-500 border border-amber-500/30 px-6 py-3 rounded-2xl text-sm font-bold shadow-lg" : "bg-emerald-600 text-white px-6 py-3 rounded-2xl text-sm font-bold shadow-lg";
-}
+        /* Lesson Card */
+        .lesson-acc-item { margin-bottom: 12px; border-radius: 20px; overflow: hidden; }
+        .lesson-acc-header { cursor: pointer; padding: 16px 24px; background: rgba(255,255,255,0.03); display: flex; justify-content: space-between; align-items: center; }
+        .lesson-acc-content { padding: 20px 24px; background: rgba(255,255,255,0.01); border-top: 1px solid rgba(255,255,255,0.05); display: none; }
+    </style>
+</head>
+<body class="flex flex-col lg:flex-row min-h-screen">
 
-function showAd(callback) {
-    const overlay = document.getElementById('ad-overlay');
-    const timer = document.getElementById('ad-timer');
-    overlay.classList.remove('hidden');
-    let time = 3;
-    timer.innerText = time;
-    const interval = setInterval(() => {
-        time--;
-        timer.innerText = time;
-        if (time <= 0) { clearInterval(interval); overlay.classList.add('hidden'); callback(); }
-    }, 800);
-}
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="fixed lg:sticky top-0 left-0 h-screen w-72 bg-[#111827] border-r border-slate-800 z-[100] transition-transform -translate-x-full lg:translate-x-0 overflow-y-auto custom-scrollbar">
+        <div class="p-6">
+            <div class="flex items-center gap-3 mb-10">
+                <div class="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <i class="fas fa-graduation-cap text-slate-900 text-xl"></i>
+                </div>
+                <h1 class="text-xl font-extrabold tracking-tighter uppercase italic">Akademi <span class="text-amber-500">Pro</span></h1>
+            </div>
 
-function updateHistoryUI() {
-    const list = document.getElementById('history-list');
-    list.innerHTML = historyData.slice(0, 20).map(item => `
-        <div class="bg-slate-800/80 p-3 rounded-xl border-l-4 ${item.isCorrect ? 'border-emerald-500' : 'border-rose-500'}">
-            <p class="text-xs text-slate-200 leading-tight">${item.text}</p>
-            <div class="flex justify-between mt-2 text-[10px] text-slate-500 font-bold uppercase">
-                 <span>${item.isCorrect ? 'DOĞRU' : 'YANLIŞ'}</span>
-                 <span>${item.timestamp ? new Date(item.timestamp).toLocaleTimeString() : ''}</span>
+            <nav class="space-y-1">
+                <div onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item p-4 flex items-center gap-4 active">
+                    <i class="fas fa-th-large w-5"></i> <span class="text-sm font-bold">Dashboard</span>
+                </div>
+                <div onclick="switchView('planner')" id="nav-planner" class="nav-item p-4 flex items-center gap-4 hover:bg-slate-800/50">
+                    <i class="fas fa-calendar-alt w-5"></i> <span class="text-sm font-bold">Ders Programı</span>
+                </div>
+                <div onclick="switchView('lessons')" id="nav-lessons" class="nav-item p-4 flex items-center gap-4 hover:bg-slate-800/50">
+                    <i class="fas fa-book w-5"></i> <span class="text-sm font-bold">Ders Notları</span>
+                </div>
+                <div onclick="switchView('quiz')" id="nav-quiz" class="nav-item p-4 flex items-center gap-4 hover:bg-slate-800/50">
+                    <i class="fas fa-vial w-5"></i> <span class="text-sm font-bold">Soru Bankası</span>
+                </div>
+                <div onclick="switchView('maps')" id="nav-maps" class="nav-item p-4 flex items-center gap-4 hover:bg-slate-800/50">
+                    <i class="fas fa-map-marked-alt w-5"></i> <span class="text-sm font-bold">Harita Atölyesi</span>
+                </div>
+                <div onclick="switchView('timeline')" id="nav-timeline" class="nav-item p-4 flex items-center gap-4 hover:bg-slate-800/50">
+                    <i class="fas fa-stream w-5"></i> <span class="text-sm font-bold">Zaman Çizgisi</span>
+                </div>
+                <div onclick="switchView('ai')" id="nav-ai" class="nav-item p-4 flex items-center gap-4 hover:bg-slate-800/50">
+                    <i class="fas fa-robot w-5"></i> <span class="text-sm font-bold">AI Asistan</span>
+                </div>
+            </nav>
+
+            <div class="mt-10 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                <div class="flex items-center gap-3 mb-3 text-amber-500">
+                    <i class="fas fa-crown"></i>
+                    <span class="text-xs font-black uppercase">Premium Avantaj</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mb-4 font-medium">Harita ve Tüm Konu Arşivine Sınırsız Erişim.</p>
+                <button onclick="showPremium()" class="w-full py-2.5 rounded-xl bg-amber-500 text-slate-900 text-xs font-black uppercase hover:bg-amber-400 transition-colors">YÜKSELT - 99.99₺</button>
             </div>
         </div>
-    `).join('');
-}
+    </aside>
 
-function switchTab(tab) {
-    const tabCats = document.getElementById('tab-cats');
-    const tabHistory = document.getElementById('tab-history');
-    const contentCats = document.getElementById('content-cats');
-    const contentHistory = document.getElementById('content-history');
+    <!-- ANA İÇERİK -->
+    <main class="flex-1 p-4 lg:p-8 overflow-y-auto custom-scrollbar relative">
+        
+        <!-- ÜST BAR -->
+        <header class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="lg:hidden p-3 bg-slate-800 rounded-xl">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="hidden sm:block">
+                    <h2 id="view-title" class="text-2xl font-black italic uppercase">Kişisel Panel - <span class="text-amber-500">Akademi Pro</span></h2>
+                    <p class="text-xs text-slate-500 font-bold tracking-widest uppercase">GÜNCEL ÖSYM MÜFREDATI AKTİF</p>
+                </div>
+            </div>
 
-    if(tab === 'cats') {
-        tabCats.classList.add('border-amber-500', 'bg-slate-800/50');
-        tabCats.classList.remove('border-transparent');
-        tabHistory.classList.remove('border-amber-500', 'bg-slate-800/50');
-        tabHistory.classList.add('border-transparent');
-        contentCats.classList.remove('hidden');
-        contentHistory.classList.add('hidden');
-    } else {
-        tabHistory.classList.add('border-amber-500', 'bg-slate-800/50');
-        tabHistory.classList.remove('border-transparent');
-        tabCats.classList.remove('border-amber-500', 'bg-slate-800/50');
-        tabCats.classList.add('border-transparent');
-        contentCats.classList.add('hidden');
-        contentHistory.classList.remove('hidden');
-    }
-}
+            <div class="flex items-center gap-3 lg:gap-6">
+                <div class="flex flex-col items-end">
+                    <span class="text-[10px] text-slate-500 font-black uppercase">Sınava Kalan</span>
+                    <span class="text-lg font-black text-amber-500" id="countdown">-- Gün</span>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center cursor-pointer hover:border-amber-500 transition-colors" onclick="switchView('profile')">
+                    <i class="fas fa-user-circle text-2xl"></i>
+                </div>
+            </div>
+        </header>
 
-// Stats Modal Logic
-function showStats() {
-    // Calculate stats
-    const totalAnswered = historyData.length;
-    const totalCorrect = historyData.filter(x => x.isCorrect).length;
-    const accuracy = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
-    
-    document.getElementById('stat-total').innerText = totalAnswered;
-    document.getElementById('stat-rate').innerText = accuracy + '%';
-    document.getElementById('stat-streak').innerText = streak;
-    
-    document.getElementById('stats-modal').classList.remove('hidden');
-}
+        <div id="view-content" class="space-y-8">
+            
+            <!-- DASHBOARD -->
+            <section id="view-dashboard" class="animate-fade">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="card-gradient p-6 rounded-[2rem] border border-slate-800 flex items-center gap-5">
+                        <div class="w-14 h-14 bg-emerald-500/20 text-emerald-500 rounded-2xl flex items-center justify-center text-2xl"><i class="fas fa-check-circle"></i></div>
+                        <div><p class="text-xs text-slate-500 font-bold uppercase">Haftalık Net</p><h4 class="text-2xl font-black">78.50</h4></div>
+                    </div>
+                    <div class="card-gradient p-6 rounded-[2rem] border border-slate-800 flex items-center gap-5">
+                        <div class="w-14 h-14 bg-blue-500/20 text-blue-500 rounded-2xl flex items-center justify-center text-2xl"><i class="fas fa-pen-nib"></i></div>
+                        <div><p class="text-xs text-slate-500 font-bold uppercase">Soru Sayısı</p><h4 class="text-2xl font-black">12.5K+</h4></div>
+                    </div>
+                    <div class="card-gradient p-6 rounded-[2rem] border border-slate-800 flex items-center gap-5">
+                        <div class="w-14 h-14 bg-amber-500/20 text-amber-500 rounded-2xl flex items-center justify-center text-2xl"><i class="fas fa-fire"></i></div>
+                        <div><p class="text-xs text-slate-500 font-bold uppercase">Seri Gün</p><h4 class="text-2xl font-black">12</h4></div>
+                    </div>
+                </div>
 
-function closeStats() {
-    document.getElementById('stats-modal').classList.add('hidden');
-}
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800 shadow-2xl">
+                        <h3 class="font-black italic uppercase tracking-tight mb-6">Net Gelişimi</h3>
+                        <canvas id="performanceChart" height="200"></canvas>
+                    </div>
+                    <div class="bg-slate-900/50 p-8 rounded-[2.5rem] border border-slate-800 shadow-2xl">
+                        <h3 class="font-black italic uppercase tracking-tight mb-6">Hızlı Tekrar Kartları</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20 cursor-pointer hover:scale-105 transition-all" onclick="switchView('lessons')">
+                                <span class="text-xs font-black text-amber-500 uppercase">Tarih</span>
+                                <p class="text-sm font-bold mt-2">Kuruluş Dönemi Padişahları</p>
+                            </div>
+                            <div class="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20 cursor-pointer hover:scale-105 transition-all" onclick="switchView('lessons')">
+                                <span class="text-xs font-black text-blue-500 uppercase">Coğrafya</span>
+                                <p class="text-sm font-bold mt-2">Karstik Göller ve Şehirler</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-window.onload = function() {
-    showHome();
-    loadProgress();
-    
-    // Add audio init on first user interaction
-    document.body.addEventListener('click', initAudio, { once: true });
-};
+            <!-- DERS NOTLARI (FULL CONTENT) -->
+            <section id="view-lessons" class="hidden animate-fade">
+                <div class="flex gap-4 mb-8">
+                    <button onclick="toggleLessonTab('tarih')" id="btn-tab-tarih" class="px-8 py-3 rounded-xl bg-amber-500 text-slate-900 font-black uppercase text-sm">TARİH</button>
+                    <button onclick="toggleLessonTab('cografya')" id="btn-tab-cografya" class="px-8 py-3 rounded-xl bg-slate-800 font-black uppercase text-sm">COĞRAFYA</button>
+                </div>
+
+                <!-- Tarih İçeriği -->
+                <div id="lesson-tarih" class="space-y-4">
+                    <div class="lesson-acc-item bg-slate-900/40 border border-slate-800">
+                        <div class="lesson-acc-header" onclick="toggleAccordion(this)">
+                            <span class="font-bold">I. Osmanlı Kuruluş Dönemi (1299-1453)</span>
+                            <i class="fas fa-chevron-down text-slate-500"></i>
+                        </div>
+                        <div class="lesson-acc-content text-slate-300 text-sm leading-relaxed space-y-3">
+                            <p><strong>Osman Bey:</strong> Bizans ile ilk savaş (Koyunhisar/Bafeus). İlk vergi (Bac) ve ilk para (Bakır).</p>
+                            <p><strong>Orhan Bey:</strong> Bursa'nın fethi (Başkent). İlk medrese (İznik). İlk düzenli ordu (Yaya ve Müsellem). Rumeli'ye geçiş (Çimpe Kalesi).</p>
+                            <p><strong>I. Murat (Hüdavendigar):</strong> Sazlıdere Savaşı (Edirne'nin fethi). İlk Haçlı Savaşı (Sırpsındığı). Yeniçeri Ocağı'nın kurulması. "Ülke padişah ve oğullarınındır" sistemi.</p>
+                            <p><strong>Yıldırım Bayezid:</strong> İstanbul'u ilk kuşatan padişah. Niğbolu Zaferi sonrası "Sultan-ı İklim-i Rum" unvanı. Ankara Savaşı (1402) ile Timur'a esir düştü ve Fetret Devri başladı.</p>
+                        </div>
+                    </div>
+                    <div class="lesson-acc-item bg-slate-900/40 border border-slate-800">
+                        <div class="lesson-acc-header" onclick="toggleAccordion(this)">
+                            <span class="font-bold">II. İnkılap Tarihi: Milli Mücadele</span>
+                            <i class="fas fa-chevron-down text-slate-500"></i>
+                        </div>
+                        <div class="lesson-acc-content text-slate-300 text-sm leading-relaxed space-y-3">
+                            <p><strong>Genelgeler Dönemi:</strong> Havza (Halkı uyandırma), Amasya (İhtilal beyannamesi), Erzurum (Manda ve himaye ilk reddi), Sivas (Tüm cemiyetlerin birleşmesi).</p>
+                            <p><strong>Savaşlar:</strong> I. ve II. İnönü (Savunma), Kütahya-Eskişehir (Tek yenilgi), Sakarya (Meydan Muharebesi - Hatt-ı Müdafaa yoktur), Büyük Taarruz (Kesin zafer).</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coğrafya İçeriği -->
+                <div id="lesson-cografya" class="hidden space-y-4">
+                    <div class="lesson-acc-item bg-slate-900/40 border border-slate-800">
+                        <div class="lesson-acc-header" onclick="toggleAccordion(this)">
+                            <span class="font-bold">I. Türkiye'nin Dağları ve Oluşumu</span>
+                            <i class="fas fa-chevron-down text-slate-500"></i>
+                        </div>
+                        <div class="lesson-acc-content text-slate-300 text-sm leading-relaxed space-y-3">
+                            <p><strong>Kıvrımlı Dağlar:</strong> Kuzey Anadolu Dağları (Küre, Ilgaz, Köroğlu, Kaçkar) ve Toroslar (Bey Dağları, Bolkarlar, Aladağlar).</p>
+                            <p><strong>Kırıklı Dağlar (Ege):</strong> Kaz, Madra, Yunt, Bozdağlar, Aydın Dağları, Menteşe Dağları. (Nur/Amanos Dağları Akdeniz'de istisnadır).</p>
+                            <p><strong>Volkanik Dağlar:</strong> Erciyes, Melendiz, Hasan, Karacadağ (İç Anadolu). Ağrı, Tendürek, Süphan, Nemrut (Doğu Anadolu). Kula Tepeleri (Ege - En genç).</p>
+                        </div>
+                    </div>
+                    <div class="lesson-acc-item bg-slate-900/40 border border-slate-800">
+                        <div class="lesson-acc-header" onclick="toggleAccordion(this)">
+                            <span class="font-bold">II. Göller ve Akarsular</span>
+                            <i class="fas fa-chevron-down text-slate-500"></i>
+                        </div>
+                        <div class="lesson-acc-content text-slate-300 text-sm leading-relaxed space-y-3">
+                            <p><strong>Tektonik Göller:</strong> Tuz, Beyşehir, Eğirdir, Akşehir, Manyas, Ulubat, İznik, Sapanca.</p>
+                            <p><strong>Karstik Göller:</strong> Salda, Avlan, Kestel, Elmalı (Toroslar).</p>
+                            <p><strong>Volkanik Set:</strong> Van Gölü, Nazik, Erçek, Balık, Çıldır (Lavların akarsu önünü kesmesiyle oluşur).</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ZAMAN ÇİZGİSİ (FULL CHRONOLOGY) -->
+            <section id="view-timeline" class="hidden animate-fade">
+                <div class="timeline-container bg-slate-900/50 rounded-[3rem] border border-slate-800 custom-scrollbar">
+                    <div class="timeline-entry">
+                        <div class="timeline-year">1302</div>
+                        <div><h4 class="font-bold">Koyunhisar Savaşı</h4><p class="text-xs text-slate-500">Bizans'a karşı kazanılan ilk büyük zafer.</p></div>
+                    </div>
+                    <div class="timeline-entry">
+                        <div class="timeline-year">1453</div>
+                        <div><h4 class="font-bold">İstanbul'un Fethi</h4><p class="text-xs text-slate-500">Fatih Sultan Mehmet tarafından Roma İmparatorluğu'na son verildi.</p></div>
+                    </div>
+                    <div class="timeline-entry">
+                        <div class="timeline-year">1517</div>
+                        <div><h4 class="font-bold">Ridaniye Savaşı</h4><p class="text-xs text-slate-500">Memlüklerin yıkılması ve Halifeliğin Osmanlı'ya geçişi.</p></div>
+                    </div>
+                    <div class="timeline-entry">
+                        <div class="timeline-year">1919</div>
+                        <div><h4 class="font-bold">Samsun'a Çıkış</h4><p class="text-xs text-slate-500">Milli Mücadele'nin fiilen başlaması (19 Mayıs).</p></div>
+                    </div>
+                    <div class="timeline-entry">
+                        <div class="timeline-year">1923</div>
+                        <div><h4 class="font-bold">Cumhuriyetin İlanı</h4><p class="text-xs text-slate-500">Yeni Türk devletinin yönetim biçimi resmileşti.</p></div>
+                    </div>
+                    <div class="timeline-entry">
+                        <div class="timeline-year">1928</div>
+                        <div><h4 class="font-bold">Harf İnkılabı</h4><p class="text-xs text-slate-500">Latin harflerinin kabulü ve eğitim seferberliği.</p></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- HARİTA ATÖLYESİ -->
+            <section id="view-maps" class="hidden animate-fade">
+                <div class="bg-slate-900/50 p-4 rounded-[3rem] border border-slate-800">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                        <button onclick="mapShow('daglar')" class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[10px] font-black uppercase">DAĞLAR</button>
+                        <button onclick="mapShow('goller')" class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-[10px] font-black uppercase">GÖLLER</button>
+                        <button onclick="mapShow('ovalar')" class="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl text-[10px] font-black uppercase">OVALAR</button>
+                        <button onclick="mapShow('platolar')" class="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-[10px] font-black uppercase">PLATOLAR</button>
+                    </div>
+                    <div id="main-map"></div>
+                </div>
+            </section>
+
+            <!-- SORU BANKASI -->
+            <section id="view-quiz" class="hidden animate-fade">
+                <div class="max-w-xl mx-auto">
+                    <div class="flex justify-between mb-4">
+                        <span class="text-xs font-black uppercase text-amber-500" id="quiz-cat-title">Tarih Karma Test</span>
+                        <span class="text-xs font-black uppercase" id="quiz-q-count">Soru 1/5</span>
+                    </div>
+                    <div class="bg-slate-900/50 p-10 rounded-[3rem] border border-slate-800 text-center min-h-[300px] flex flex-col justify-center">
+                        <p class="text-lg font-bold mb-8" id="quiz-question-text">Osmanlı Devleti'nde ilk altın para hangi padişah döneminde basılmıştır?</p>
+                        <div class="grid grid-cols-1 gap-4">
+                            <button onclick="checkQuiz(this, 'Fatih Sultan Mehmet')" class="quiz-opt p-5 bg-slate-800 border-2 border-slate-700 rounded-2xl font-bold hover:border-amber-500 transition-all">Fatih Sultan Mehmet</button>
+                            <button onclick="checkQuiz(this, 'Kanuni Sultan Süleyman')" class="quiz-opt p-5 bg-slate-800 border-2 border-slate-700 rounded-2xl font-bold hover:border-amber-500 transition-all">Kanuni Sultan Süleyman</button>
+                            <button onclick="checkQuiz(this, 'Orhan Bey')" class="quiz-opt p-5 bg-slate-800 border-2 border-slate-700 rounded-2xl font-bold hover:border-amber-500 transition-all">Orhan Bey</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- PREMIUM MODAL -->
+    <div id="premium-modal" class="fixed inset-0 z-[200] bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-6 hidden text-center">
+        <div class="bg-slate-900 w-full max-w-xl rounded-[4rem] p-12 border border-amber-500/30">
+            <i class="fas fa-crown text-8xl text-amber-500 mb-8"></i>
+            <h2 class="text-4xl font-black italic mb-4 uppercase">PREMIUM AKTİVASYON</h2>
+            <button onclick="simulatePurchase()" class="w-full bg-amber-500 text-slate-900 py-6 rounded-3xl font-black text-xl uppercase shadow-2xl">99.99₺ İLE ŞİMDİ AL</button>
+            <button onclick="hidePremium()" class="mt-4 text-slate-500 font-bold uppercase text-xs">ŞİMDİ DEĞİL</button>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script>
+        let isPremium = false;
+        let currentView = 'dashboard';
+        let mapInstance;
+        let markers = [];
+
+        // GÖRÜNÜM DEĞİŞTİRME
+        function switchView(viewId) {
+            const targetSection = document.getElementById(`view-${viewId}`);
+            if (!targetSection) return;
+
+            document.querySelectorAll('#view-content > section').forEach(s => s.classList.add('hidden'));
+            targetSection.classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            const navItem = document.getElementById(`nav-${viewId}`);
+            if(navItem) navItem.classList.add('active');
+
+            const titles = {
+                dashboard: 'Kişisel Panel', planner: 'Çalışma Planı', lessons: 'Ders Notları',
+                quiz: 'Soru Bankası', maps: 'Harita Atölyesi', timeline: 'Zaman Çizgisi',
+                ai: 'AI Asistan', profile: 'Profil'
+            };
+            document.getElementById('view-title').innerHTML = `${titles[viewId]} - <span class="text-amber-500">Akademi Pro</span>`;
+            
+            if(viewId === 'maps') initMap();
+            if(window.innerWidth < 1024) toggleSidebar();
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+        }
+
+        // DERS NOTLARI LOGIC
+        function toggleLessonTab(tab) {
+            document.getElementById('lesson-tarih').classList.toggle('hidden', tab !== 'tarih');
+            document.getElementById('lesson-cografya').classList.toggle('hidden', tab !== 'cografya');
+            
+            document.getElementById('btn-tab-tarih').className = tab === 'tarih' ? 'px-8 py-3 rounded-xl bg-amber-500 text-slate-900 font-black uppercase text-sm' : 'px-8 py-3 rounded-xl bg-slate-800 font-black uppercase text-sm';
+            document.getElementById('btn-tab-cografya').className = tab === 'cografya' ? 'px-8 py-3 rounded-xl bg-amber-500 text-slate-900 font-black uppercase text-sm' : 'px-8 py-3 rounded-xl bg-slate-800 font-black uppercase text-sm';
+        }
+
+        function toggleAccordion(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('i');
+            const isOpen = content.style.display === 'block';
+            
+            document.querySelectorAll('.lesson-acc-content').forEach(c => c.style.display = 'none');
+            document.querySelectorAll('.lesson-acc-header i').forEach(i => i.style.transform = 'rotate(0deg)');
+
+            if(!isOpen) {
+                content.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        // HARİTA LOGIC
+        function initMap() {
+            if (!mapInstance) {
+                mapInstance = L.map('main-map').setView([39.0, 35.0], 6);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(mapInstance);
+            }
+            setTimeout(() => mapInstance.invalidateSize(), 300);
+        }
+
+        const mapData = {
+            daglar: [[39.7, 44.3, "Ağrı Dağı (Volkanik)"], [38.5, 35.4, "Erciyes Dağı (Volkanik)"], [40.0, 29.1, "Uludağ (Batoliti)"], [36.7, 36.3, "Nur Dağları (Kırıklı)"]],
+            goller: [[38.6, 42.9, "Van Gölü (Karma)"], [38.8, 33.3, "Tuz Gölü (Tektonik)"], [37.7, 31.5, "Beyşehir Gölü (Tektonik)"], [37.5, 29.6, "Salda Gölü (Karstik)"]],
+            ovalar: [[36.8, 35.3, "Çukurova (Delta)"], [37.8, 32.4, "Konya Ovası (Tektonik)"], [41.5, 35.9, "Bafra Ovası (Delta)"]],
+            platolar: [[39.4, 32.4, "Haymana Platosu"], [40.4, 42.6, "Erzurum-Kars Platosu (Lav)"], [36.6, 30.0, "Teke Platosu (Karstik)"]]
+        };
+
+        function mapShow(type) {
+            markers.forEach(m => mapInstance.removeLayer(m));
+            markers = [];
+            mapData[type].forEach(item => {
+                const m = L.marker([item[0], item[1]]).addTo(mapInstance).bindPopup(`<b>${item[2]}</b>`);
+                markers.push(m);
+            });
+        }
+
+        // QUIZ LOGIC
+        function checkQuiz(btn, correct) {
+            if(correct === "Fatih Sultan Mehmet") {
+                btn.classList.add('border-emerald-500', 'bg-emerald-500/20');
+                alert("Doğru! İlk altın para Fatih (Sultani) döneminde basılmıştır.");
+            } else {
+                btn.classList.add('border-rose-500', 'bg-rose-500/20');
+                alert("Yanlış. Doğru cevap Fatih Sultan Mehmet olmalıydı.");
+            }
+        }
+
+        // PREMIUM LOGIC
+        function showPremium() { document.getElementById('premium-modal').classList.remove('hidden'); }
+        function hidePremium() { document.getElementById('premium-modal').classList.add('hidden'); }
+        function simulatePurchase() {
+            isPremium = true;
+            hidePremium();
+            alert("Tüm kilitler açıldı! İyi çalışmalar.");
+        }
+
+        function initCharts() {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Oca', 'Şub', 'Mar', 'Nis', 'May'],
+                    datasets: [{
+                        label: 'Net Ortalaması',
+                        data: [55, 62, 60, 75, 82],
+                        borderColor: '#f59e0b',
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)'
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                        x: { grid: { display: false }, ticks: { color: '#64748b' } }
+                    }
+                }
+            });
+        }
+
+        window.onload = () => {
+            initCharts();
+            document.getElementById('countdown').innerText = `124 Gün`;
+        };
+    </script>
+</body>
+</html>
