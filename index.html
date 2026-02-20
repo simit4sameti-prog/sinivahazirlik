@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Akademi Pro v3.6 - İsimle Giriş Sistemi</title>
+    <title>Akademi Pro v3.7 - Sorunsuz Kayıt & Giriş</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -229,7 +229,6 @@
 
     <script>
         let currentUser = null;
-        let authUsername = null;
 
         // BİLDİRİM SİSTEMİ
         function showToast(message, type = 'info') {
@@ -273,7 +272,7 @@
             }
         }
 
-        // DATABASE GİRİŞ İŞLEMİ (İsim & Şifre)
+        // DATABASE GİRİŞ İŞLEMİ
         async function handleLogin() {
             const { db, appId, getDoc, doc, signInAnonymously, auth } = window.firebase;
             const name = document.getElementById('login-username').value.trim();
@@ -286,19 +285,21 @@
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
             
             try {
-                // RULE 1: /artifacts/{appId}/public/data/user_credentials/{username}
+                // RULE 3: AUTH BEFORE QUERY
+                await signInAnonymously(auth);
+                
                 const sanitizedName = name.toLowerCase().replace(/\s/g, '_');
                 const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'user_credentials', sanitizedName);
                 const userSnap = await getDoc(userRef);
 
                 if (userSnap.exists() && userSnap.data().password === pass) {
-                    await signInAnonymously(auth);
                     localStorage.setItem('akademi_pro_username', name);
                     showToast(`Hoş geldin, ${name}!`);
                 } else {
                     throw new Error("Hatalı giriş.");
                 }
             } catch (err) {
+                console.error("Giriş hatası:", err);
                 showToast("Giriş yapılamadı: Bilgilerinizi kontrol edin.", "error");
                 btn.disabled = false;
                 btn.innerHTML = '<span>GİRİŞ YAP</span>';
@@ -307,7 +308,7 @@
 
         // KAYIT İŞLEMİ
         async function handleRegister() {
-            const { db, appId, setDoc, doc, signInAnonymously, auth } = window.firebase;
+            const { db, appId, setDoc, doc, signInAnonymously, auth, getDoc } = window.firebase;
             const name = document.getElementById('reg-name').value.trim();
             const pass = document.getElementById('reg-pass').value;
             const q = document.getElementById('reg-question').value;
@@ -319,9 +320,12 @@
 
             btn.disabled = true;
             try {
+                // RULE 3: AUTH BEFORE QUERY
+                await signInAnonymously(auth);
+                
                 const sanitizedName = name.toLowerCase().replace(/\s/g, '_');
                 const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'user_credentials', sanitizedName);
-                const checkSnap = await window.firebase.getDoc(userRef);
+                const checkSnap = await getDoc(userRef);
                 
                 if(checkSnap.exists()) {
                     btn.disabled = false;
@@ -336,33 +340,36 @@
                     createdAt: new Date().toISOString()
                 });
 
-                await signInAnonymously(auth);
                 localStorage.setItem('akademi_pro_username', name);
                 showToast("Hesabın başarıyla oluşturuldu!");
             } catch (err) {
+                console.error("Kayıt hatası detayı:", err);
                 showToast("Kayıt hatası oluştu.", "error");
                 btn.disabled = false;
             }
         }
 
-        // ŞİFRE SIFIRLAMA MANTIĞI
+        // ŞİFRE SIFIRLAMA
         let currentForgotUser = null;
         async function handleForgotFetch() {
             const name = document.getElementById('forgot-name').value.trim();
             if(!name) return showToast("İsim girin.", "error");
 
-            const { db, appId, doc, getDoc } = window.firebase;
-            const sanitizedName = name.toLowerCase().replace(/\s/g, '_');
-            const userSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'user_credentials', sanitizedName));
+            const { db, appId, doc, getDoc, auth, signInAnonymously } = window.firebase;
+            try {
+                await signInAnonymously(auth);
+                const sanitizedName = name.toLowerCase().replace(/\s/g, '_');
+                const userSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'user_credentials', sanitizedName));
 
-            if(userSnap.exists()) {
-                currentForgotUser = sanitizedName;
-                document.getElementById('forgot-question-display').innerText = userSnap.data().securityQuestion;
-                document.getElementById('forgot-step-1').classList.add('hidden');
-                document.getElementById('forgot-step-2').classList.remove('hidden');
-            } else {
-                showToast("Kullanıcı bulunamadı.", "error");
-            }
+                if(userSnap.exists()) {
+                    currentForgotUser = sanitizedName;
+                    document.getElementById('forgot-question-display').innerText = userSnap.data().securityQuestion;
+                    document.getElementById('forgot-step-1').classList.add('hidden');
+                    document.getElementById('forgot-step-2').classList.remove('hidden');
+                } else {
+                    showToast("Kullanıcı bulunamadı.", "error");
+                }
+            } catch (e) { showToast("Sistem hatası.", "error"); }
         }
 
         async function handleForgotVerify() {
@@ -403,7 +410,7 @@
             location.reload();
         }
 
-        // UYGULAMA BAŞLATMA VE AUTH TAKİBİ
+        // UYGULAMA BAŞLATMA
         const checkFirebase = setInterval(() => {
             if (window.firebase && window.firebase.auth) {
                 clearInterval(checkFirebase);
@@ -412,7 +419,6 @@
                 onAuthStateChanged(auth, (user) => {
                     const savedName = localStorage.getItem('akademi_pro_username');
                     if (user && savedName) {
-                        currentUser = user;
                         document.getElementById('auth-screen').classList.add('hidden');
                         document.getElementById('sidebar').classList.remove('hidden');
                         document.getElementById('main-content').classList.remove('hidden');
@@ -422,7 +428,6 @@
                         document.getElementById('user-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${savedName}`;
                         document.getElementById('user-account-type').innerText = savedName === 'Misafir' ? "MISAFIR" : "ÜYE ÖĞRENCI";
                     } else {
-                        currentUser = null;
                         document.getElementById('auth-screen').classList.remove('hidden');
                         document.getElementById('sidebar').classList.add('hidden');
                         document.getElementById('main-content').classList.add('hidden');
