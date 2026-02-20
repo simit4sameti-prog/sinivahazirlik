@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Akademi Pro v3.0 - Kayıt & Giriş Sistemli</title>
+    <title>Akademi Pro v3.6 - İsimle Giriş Sistemi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -13,23 +13,19 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInAnonymously, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Config
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'akademi-pro-default';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'akademi-pro-v3';
 
-        // Exposing all necessary functions to global window object
         window.firebase = { 
             auth, db, appId, 
             doc, setDoc, getDoc, collection, onSnapshot, addDoc, updateDoc, deleteDoc, query, 
-            signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut,
-            signInWithCustomToken, signInAnonymously,
-            onAuthStateChanged // Fixed: Added missing onAuthStateChanged to global object
+            signInAnonymously, signOut, onAuthStateChanged 
         };
     </script>
 
@@ -58,59 +54,116 @@
         .nav-item:hover { background: rgba(245, 158, 11, 0.1); color: var(--primary); }
         .nav-item.active { background: var(--primary); color: var(--bg-dark); font-weight: 800; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); }
         
-        #main-map { height: 450px; border-radius: 24px; z-index: 10; }
-        
-        .animate-pop { animation: pop 0.3s ease-out; }
+        .animate-pop { animation: pop 0.3s ease-out forwards; }
         @keyframes pop { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
 
-        .chat-container { height: 400px; display: flex; flex-direction: column; gap: 12px; }
-        .bubble { padding: 12px 16px; border-radius: 20px; max-width: 85%; line-height: 1.5; font-size: 0.95rem; }
-        .bubble-ai { background: #1e293b; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.1); }
-        .bubble-user { background: var(--primary); color: #000; align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 500; }
-
-        .timer-circle { width: 180px; height: 180px; border: 8px solid rgba(245, 158, 11, 0.1); border-top-color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800; transition: 1s linear; }
-    
-        .progress-line { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1); position: relative; overflow: hidden; }
-        .progress-line-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.5s ease; }
+        /* Auth Background Blobs */
+        .blob { position: absolute; width: 400px; height: 400px; border-radius: 50%; filter: blur(80px); opacity: 0.15; z-index: -1; }
+        .blob-1 { background: var(--primary); top: -100px; right: -100px; }
+        .blob-2 { background: #3b82f6; bottom: -100px; left: -100px; }
 
         #auth-screen {
             position: fixed; inset: 0; z-index: 1000; background: var(--bg-dark);
             display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
         }
+
+        #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 12px; }
+        
+        input::placeholder { color: #64748b; }
     </style>
 </head>
 <body class="flex flex-col lg:flex-row min-h-screen">
 
+    <div id="toast-container"></div>
+
     <!-- AUTH SCREEN -->
     <div id="auth-screen">
-        <div class="w-full max-w-md p-8 glass rounded-[3rem] animate-pop mx-4">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+
+        <div class="w-full max-w-sm p-8 glass rounded-[3rem] animate-pop mx-4 shadow-2xl border-white/10">
             <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/20">
-                    <i class="fas fa-graduation-cap text-slate-900 text-3xl"></i>
+                <div class="w-20 h-20 bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/20 transform hover:rotate-6 transition-transform">
+                    <i class="fas fa-graduation-cap text-slate-900 text-4xl"></i>
                 </div>
-                <h1 class="text-2xl font-black italic uppercase">Akademi <span class="text-amber-500">Pro</span></h1>
-                <p class="text-slate-500 text-xs font-bold uppercase mt-2 tracking-widest">Eğitimin Geleceğine Hoş Geldin</p>
+                <h1 class="text-3xl font-black italic uppercase tracking-tighter">Akademi <span class="text-amber-500">Pro</span></h1>
+                <p class="text-slate-500 text-[10px] font-bold uppercase mt-2 tracking-[0.2em]">Kullanıcı Paneli</p>
+            </div>
+
+            <!-- Tab Switcher -->
+            <div id="auth-tabs" class="bg-slate-800/50 p-1 rounded-xl flex mb-6 border border-slate-700/50">
+                <button onclick="toggleAuth('login')" id="tab-login" class="flex-1 py-2 text-xs font-black uppercase rounded-lg transition-all bg-amber-500 text-slate-900">Giriş</button>
+                <button onclick="toggleAuth('register')" id="tab-register" class="flex-1 py-2 text-xs font-black uppercase rounded-lg transition-all text-slate-400">Kayıt</button>
             </div>
 
             <!-- Login Form -->
             <div id="login-form" class="space-y-4">
-                <input type="email" id="login-email" placeholder="E-posta Adresi" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 transition-colors">
-                <input type="password" id="login-pass" placeholder="Şifre" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 transition-colors">
-                <button onclick="handleLogin()" class="w-full py-4 bg-amber-500 text-slate-900 rounded-2xl font-black uppercase shadow-xl hover:scale-[1.02] transition-transform">Giriş Yap</button>
-                <p class="text-center text-xs text-slate-500">Hesabın yok mu? <button onclick="toggleAuth('register')" class="text-amber-500 font-bold">Kayıt Ol</button></p>
+                <div class="relative">
+                    <i class="fas fa-user absolute left-4 top-4 text-slate-500"></i>
+                    <input type="text" id="login-username" placeholder="Ad Soyad" class="w-full bg-slate-900/50 border border-slate-700 rounded-2xl pl-12 pr-6 py-4 outline-none focus:border-amber-500 transition-colors text-sm text-white">
+                </div>
+                <div class="relative">
+                    <i class="fas fa-lock absolute left-4 top-4 text-slate-500"></i>
+                    <input type="password" id="login-pass" placeholder="Şifre" class="w-full bg-slate-900/50 border border-slate-700 rounded-2xl pl-12 pr-6 py-4 outline-none focus:border-amber-500 transition-colors text-sm text-white">
+                </div>
+                <button id="btn-login" onclick="handleLogin()" class="w-full py-4 bg-amber-500 text-slate-900 rounded-2xl font-black uppercase shadow-xl hover:scale-[1.02] transition-transform flex justify-center items-center gap-2">
+                    <span>GİRİŞ YAP</span>
+                </button>
+                <button onclick="toggleAuth('forgot')" class="w-full text-center text-[10px] font-bold text-slate-500 hover:text-amber-500 uppercase tracking-widest transition-colors">Şifremi Unuttum</button>
             </div>
 
-            <!-- Register Form (Hidden) -->
-            <div id="register-form" class="space-y-4 hidden">
-                <input type="text" id="reg-name" placeholder="Ad Soyad" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 transition-colors">
-                <input type="email" id="reg-email" placeholder="E-posta Adresi" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 transition-colors">
-                <input type="password" id="reg-pass" placeholder="Şifre" class="w-full bg-slate-800 border border-slate-700 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 transition-colors">
-                <button onclick="handleRegister()" class="w-full py-4 bg-amber-500 text-slate-900 rounded-2xl font-black uppercase shadow-xl hover:scale-[1.02] transition-transform">Kayıt Ol</button>
-                <p class="text-center text-xs text-slate-500">Zaten üye misin? <button onclick="toggleAuth('login')" class="text-amber-500 font-bold">Giriş Yap</button></p>
+            <!-- Register Form -->
+            <div id="register-form" class="space-y-4 hidden animate-pop">
+                <div class="relative">
+                    <i class="fas fa-id-card absolute left-4 top-4 text-slate-500"></i>
+                    <input type="text" id="reg-name" placeholder="Ad Soyad" class="w-full bg-slate-900/50 border border-slate-700 rounded-2xl pl-12 pr-6 py-4 outline-none focus:border-amber-500 text-sm text-white">
+                </div>
+                <div class="relative">
+                    <i class="fas fa-key absolute left-4 top-4 text-slate-500"></i>
+                    <input type="password" id="reg-pass" placeholder="Şifre Oluştur" class="w-full bg-slate-900/50 border border-slate-700 rounded-2xl pl-12 pr-6 py-4 outline-none focus:border-amber-500 text-sm text-white">
+                </div>
+                
+                <div class="space-y-2 pt-2 border-t border-slate-800">
+                    <p class="text-[10px] font-black text-amber-500 uppercase px-1">Güvenlik Sorusu (Kurtarma İçin)</p>
+                    <select id="reg-question" class="w-full bg-slate-900/50 border border-slate-700 rounded-2xl px-4 py-3 outline-none text-xs text-slate-300">
+                        <option value="">Bir soru seçin...</option>
+                        <option>İlkokuldaki sınıf öğretmeninizin adı nedir?</option>
+                        <option>İlk evcil hayvanınızın adı nedir?</option>
+                        <option>En sevdiğiniz çocukluk arkadaşınızın adı nedir?</option>
+                        <option>Doğduğunuz şehir neresidir?</option>
+                        <option>Annenizin kızlık soyadı nedir?</option>
+                    </select>
+                    <input type="text" id="reg-answer" placeholder="Güvenlik Cevabı" class="w-full bg-slate-900/50 border border-slate-700 rounded-2xl px-6 py-3 outline-none focus:border-amber-500 text-xs text-white">
+                </div>
+
+                <button id="btn-register" onclick="handleRegister()" class="w-full py-4 bg-amber-500 text-slate-900 rounded-2xl font-black uppercase shadow-xl hover:scale-[1.02] transition-transform">KAYIT OL</button>
+            </div>
+
+            <!-- Forgot Password Form -->
+            <div id="forgot-form" class="space-y-4 hidden animate-pop">
+                <h3 class="text-center font-black text-sm uppercase text-amber-500 mb-2">Şifre Kurtarma</h3>
+                <div id="forgot-step-1">
+                    <input type="text" id="forgot-name" placeholder="Ad Soyad" class="w-full bg-slate-900/50 border border-slate-700 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 text-sm mb-4 text-white">
+                    <button onclick="handleForgotFetch()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs">Hesabı Bul</button>
+                </div>
+
+                <div id="forgot-step-2" class="hidden">
+                    <p id="forgot-question-display" class="text-xs text-slate-300 mb-2 text-center px-2 italic"></p>
+                    <input type="text" id="forgot-answer" placeholder="Cevabınız" class="w-full bg-slate-900/50 border border-slate-700 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 text-sm mb-4 text-white">
+                    <button onclick="handleForgotVerify()" class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black uppercase text-xs">Doğrula</button>
+                </div>
+
+                <div id="forgot-step-3" class="hidden">
+                    <input type="password" id="forgot-new-pass" placeholder="Yeni Şifre" class="w-full bg-slate-900/50 border border-slate-700 rounded-2xl px-6 py-4 outline-none focus:border-amber-500 text-sm mb-4 text-white">
+                    <button onclick="handleForgotReset()" class="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-xs">Şifreyi Güncelle</button>
+                </div>
+
+                <button onclick="toggleAuth('login')" class="w-full text-center text-[10px] font-bold text-slate-500 hover:text-white uppercase tracking-widest mt-2">Vazgeç</button>
             </div>
             
-            <div class="mt-8 pt-8 border-t border-slate-800">
-                <button onclick="handleGuestLogin()" class="w-full py-3 bg-slate-800 text-slate-400 rounded-xl text-xs font-bold uppercase hover:bg-slate-700 transition-colors">Misafir Olarak Devam Et</button>
+            <div class="mt-8 pt-6 border-t border-slate-800/50">
+                <button onclick="handleGuestLogin()" class="w-full py-3 bg-slate-800/50 text-slate-400 rounded-xl text-[10px] font-black uppercase hover:bg-slate-800 hover:text-white transition-colors border border-slate-700/30">Misafir Girişi</button>
             </div>
         </div>
     </div>
@@ -119,12 +172,11 @@
     <aside id="sidebar" class="hidden lg:sticky top-0 left-0 h-screen w-72 bg-[#0a0f1e] border-r border-slate-800 z-[100] transition-transform -translate-x-full lg:translate-x-0 overflow-y-auto custom-scrollbar flex flex-col">
         <div class="p-6">
             <div class="flex items-center gap-3 mb-10">
-                <div class="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                <div class="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
                     <i class="fas fa-graduation-cap text-slate-900 text-xl"></i>
                 </div>
                 <h1 class="text-xl font-extrabold tracking-tighter uppercase italic">Akademi <span class="text-amber-500">Pro</span></h1>
             </div>
-
             <nav class="flex-1 space-y-1">
                 <div onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item p-4 flex items-center gap-4 active">
                     <i class="fas fa-chart-line w-5"></i> <span class="text-sm font-bold">Analiz Merkezi</span>
@@ -135,143 +187,41 @@
                 <div onclick="switchView('lessons')" id="nav-lessons" class="nav-item p-4 flex items-center gap-4">
                     <i class="fas fa-book-open w-5"></i> <span class="text-sm font-bold">Konu Anlatımı</span>
                 </div>
-                <div onclick="switchView('quiz')" id="nav-quiz" class="nav-item p-4 flex items-center gap-4">
-                    <i class="fas fa-brain w-5"></i> <span class="text-sm font-bold">Soru Bankası</span>
-                </div>
-                <div onclick="switchView('maps')" id="nav-maps" class="nav-item p-4 flex items-center gap-4">
-                    <i class="fas fa-globe-africa w-5"></i> <span class="text-sm font-bold">Harita Atölyesi</span>
-                </div>
-                <div onclick="switchView('timeline')" id="nav-timeline" class="nav-item p-4 flex items-center gap-4">
-                    <i class="fas fa-history w-5"></i> <span class="text-sm font-bold">Kronoloji</span>
-                </div>
                 <div onclick="switchView('ai')" id="nav-ai" class="nav-item p-4 flex items-center gap-4">
                     <i class="fas fa-magic w-5"></i> <span class="text-sm font-bold">AI Eğitimci</span>
                 </div>
             </nav>
         </div>
-
         <div class="p-6 mt-auto">
             <button onclick="handleLogout()" class="w-full py-3 bg-rose-500/10 text-rose-500 text-[10px] font-black uppercase rounded-xl border border-rose-500/20 hover:bg-rose-500 hover:text-white transition-all">Güvenli Çıkış</button>
         </div>
     </aside>
 
-    <!-- ANA İÇERİK -->
+    <!-- MAIN CONTENT -->
     <main id="main-content" class="hidden flex-1 p-4 lg:p-8 overflow-y-auto custom-scrollbar relative">
         <header class="flex justify-between items-center mb-10">
             <div class="flex items-center gap-4">
-                <button onclick="toggleSidebar()" class="lg:hidden p-3 bg-slate-800 rounded-xl">
-                    <i class="fas fa-bars"></i>
-                </button>
+                <button onclick="toggleSidebar()" class="lg:hidden p-3 bg-slate-800 rounded-xl"><i class="fas fa-bars"></i></button>
                 <div>
-                    <h2 id="view-title" class="text-2xl font-black italic uppercase">Analiz <span class="text-amber-500">Merkezi</span></h2>
-                    <p class="text-[10px] text-slate-500 font-bold tracking-[0.2em] uppercase">Müfredat Ver. 2024.11 • Aktif</p>
+                    <h2 id="view-title" class="text-2xl font-black italic uppercase tracking-tighter leading-none">Analiz Merkezi</h2>
+                    <p class="text-[10px] text-slate-500 font-bold tracking-widest uppercase mt-1">Hoş Geldin Öğrenci</p>
                 </div>
             </div>
-
-            <div class="flex items-center gap-4">
-                <div class="hidden md:flex flex-col items-end border-r border-slate-800 pr-4">
-                    <span class="text-[10px] text-slate-500 font-black uppercase">Sınav Geri Sayımı</span>
-                    <span class="text-xl font-black text-amber-500" id="countdown">--:--</span>
-                </div>
-                <div class="flex items-center gap-3 bg-slate-800/50 p-1.5 pr-4 rounded-2xl border border-slate-700">
-                    <img id="user-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="w-10 h-10 rounded-xl bg-slate-700" alt="User">
-                    <div class="hidden sm:block">
-                        <p id="user-display-name" class="text-xs font-black uppercase leading-none mb-1">Yükleniyor...</p>
-                        <p class="text-[10px] text-emerald-500 font-bold">Öğrenci Hesabı</p>
-                    </div>
+            <div class="flex items-center gap-3 bg-slate-800/50 p-1.5 pr-4 rounded-2xl border border-slate-700 shadow-lg">
+                <img id="user-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="w-10 h-10 rounded-xl bg-slate-700" alt="User">
+                <div class="hidden sm:block">
+                    <p id="user-display-name" class="text-xs font-black uppercase leading-none mb-1">Yükleniyor...</p>
+                    <p class="text-[9px] text-emerald-500 font-black uppercase tracking-widest" id="user-account-type">Öğrenci Hesabı</p>
                 </div>
             </div>
         </header>
 
         <div id="view-content" class="space-y-8">
-            <!-- DASHBOARD SECTION -->
             <section id="view-dashboard" class="animate-pop">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div class="glass p-6 rounded-[2rem] flex items-center gap-5">
-                        <div class="w-14 h-14 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center text-2xl"><i class="fas fa-bullseye"></i></div>
-                        <div><p class="text-[10px] text-slate-500 font-black uppercase">TYT Net</p><h4 class="text-2xl font-black">92.25</h4></div>
-                    </div>
-                    <div class="glass p-6 rounded-[2rem] flex items-center gap-5">
-                        <div class="w-14 h-14 bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center text-2xl"><i class="fas fa-tasks"></i></div>
-                        <div><p class="text-[10px] text-slate-500 font-black uppercase">Çözülen Soru</p><h4 class="text-2xl font-black">14,820</h4></div>
-                    </div>
-                    <div class="glass p-6 rounded-[2rem] flex items-center gap-5">
-                        <div class="w-14 h-14 bg-purple-500/10 text-purple-500 rounded-2xl flex items-center justify-center text-2xl"><i class="fas fa-hourglass-half"></i></div>
-                        <div><p class="text-[10px] text-slate-500 font-black uppercase">Çalışma Saati</p><h4 class="text-2xl font-black">342s</h4></div>
-                    </div>
-                    <div class="glass p-6 rounded-[2rem] flex items-center gap-5">
-                        <div class="w-14 h-14 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center text-2xl"><i class="fas fa-fire"></i></div>
-                        <div><p class="text-[10px] text-slate-500 font-black uppercase">Günlük Seri</p><h4 class="text-2xl font-black">18 G</h4></div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div class="lg:col-span-2 space-y-8">
-                        <div class="glass p-8 rounded-[2.5rem]">
-                            <h3 class="font-black italic uppercase tracking-tight mb-8">Haftalık Gelişim</h3>
-                            <canvas id="performanceChart" height="150"></canvas>
-                        </div>
-                    </div>
-                    <div class="glass p-8 rounded-[2.5rem] space-y-6">
-                        <h3 class="font-black italic uppercase tracking-tight">Bulut Notlar</h3>
-                        <div class="p-5 bg-slate-900/50 rounded-2xl border border-slate-700">
-                            <textarea id="quick-note" class="w-full bg-transparent border-none outline-none text-xs text-slate-300 resize-none h-32" placeholder="Notların tüm cihazlarında senkronize edilir..."></textarea>
-                            <button onclick="saveNote()" id="btn-save-note" class="w-full mt-2 py-2 bg-amber-500/10 text-amber-500 text-[10px] font-black uppercase rounded-lg border border-amber-500/20 hover:bg-amber-500 hover:text-slate-900 transition-all">Buluta Kaydet</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-             <!-- ODAK MODU -->
-             <section id="view-planner" class="hidden animate-pop">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="glass p-10 rounded-[3rem] text-center flex flex-col items-center justify-center">
-                        <h3 class="text-xl font-black uppercase italic mb-8">Odak Zamanlayıcı</h3>
-                        <div class="timer-circle mb-8" id="timer-display">25:00</div>
-                        <div class="flex gap-4">
-                            <button onclick="toggleTimer()" id="timer-btn" class="px-8 py-4 bg-amber-500 text-slate-900 rounded-2xl font-black uppercase text-sm">Başlat</button>
-                            <button onclick="resetTimer()" class="px-8 py-4 bg-slate-800 rounded-2xl font-black uppercase text-sm">Sıfırla</button>
-                        </div>
-                    </div>
-                    <div class="glass p-10 rounded-[3rem]">
-                        <h3 class="text-xl font-black uppercase italic mb-8">Görev Listesi</h3>
-                        <div class="space-y-4" id="todo-list"></div>
-                        <div class="mt-8 flex gap-2">
-                            <input type="text" id="new-task" placeholder="Yeni görev ekle..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:border-amber-500 outline-none">
-                            <button onclick="addTask()" class="p-4 bg-amber-500 text-slate-900 rounded-xl"><i class="fas fa-plus"></i></button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- AI SECTION -->
-            <section id="view-ai" class="hidden animate-pop">
-                <div class="max-w-3xl mx-auto glass rounded-[3rem] overflow-hidden flex flex-col h-[600px]">
-                    <div id="ai-chat-box" class="flex-1 p-6 overflow-y-auto custom-scrollbar chat-container">
-                        <div class="bubble bubble-ai">Merhaba! Ben Akademi Pro asistanı. Sana bugün nasıl yardımcı olabilirim?</div>
-                    </div>
-                    <div class="p-4 bg-slate-900/50 flex gap-2">
-                        <input type="text" id="ai-input" placeholder="Bir soru sor..." class="flex-1 bg-slate-800 border border-slate-700 rounded-2xl px-6 py-4 outline-none text-sm">
-                        <button onclick="askAI()" class="w-14 h-14 bg-amber-500 text-slate-900 rounded-2xl flex items-center justify-center"><i class="fas fa-paper-plane"></i></button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- HARİTA ATÖLYESİ -->
-            <section id="view-maps" class="hidden animate-pop">
-                <div class="bg-slate-900/50 p-6 rounded-[3rem] border border-slate-800">
-                    <div id="main-map"></div>
-                </div>
-            </section>
-
-            <!-- SORU BANKASI -->
-            <section id="view-quiz" class="hidden animate-pop">
-                <div class="max-w-2xl mx-auto" id="quiz-container">
-                    <div class="glass p-10 rounded-[3rem] min-h-[400px] flex flex-col">
-                        <div class="mb-4"><span class="px-3 py-1 bg-slate-800 rounded-full text-[10px] font-black uppercase" id="q-progress">Soru 1 / 5</span></div>
-                        <p class="text-lg font-extrabold leading-relaxed mb-10" id="q-text">Hazır olduğunda testi başlat.</p>
-                        <div class="grid grid-cols-1 gap-4 mt-auto" id="q-options"></div>
-                    </div>
+                <div class="glass p-12 rounded-[3rem] border-slate-800 text-center">
+                    <i class="fas fa-check-circle text-6xl text-emerald-500 mb-6"></i>
+                    <h3 class="text-2xl font-black uppercase italic mb-2">Oturum Açıldı</h3>
+                    <p class="text-slate-400 max-w-md mx-auto">Başarıyla giriş yaptın. Artık verilerin cihazlar arası senkronize edilecek.</p>
                 </div>
             </section>
         </div>
@@ -279,250 +229,217 @@
 
     <script>
         let currentUser = null;
-        let unsubscribeTodos = null;
-        let timerSeconds = 1500;
-        let timerInterval;
+        let authUsername = null;
 
-        // AUTH FUNCTIONS
+        // BİLDİRİM SİSTEMİ
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-rose-500' : 'bg-emerald-500';
+            toast.className = `${bgColor} text-white px-6 py-4 rounded-2xl shadow-2xl animate-pop flex items-center gap-3 font-black text-xs uppercase tracking-wider border border-white/20`;
+            toast.innerHTML = `<i class="fas ${type === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(10px)';
+                toast.style.transition = 'all 0.5s ease';
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+
+        // AUTH GÖRÜNÜMÜ
         function toggleAuth(mode) {
-            document.getElementById('login-form').classList.toggle('hidden', mode === 'register');
-            document.getElementById('register-form').classList.toggle('hidden', mode === 'login');
+            const login = document.getElementById('login-form');
+            const register = document.getElementById('register-form');
+            const forgot = document.getElementById('forgot-form');
+            const tabL = document.getElementById('tab-login');
+            const tabR = document.getElementById('tab-register');
+
+            [login, register, forgot].forEach(el => el.classList.add('hidden'));
+
+            if (mode === 'login') {
+                login.classList.remove('hidden');
+                tabL.className = "flex-1 py-2 text-xs font-black uppercase rounded-lg bg-amber-500 text-slate-900";
+                tabR.className = "flex-1 py-2 text-xs font-black uppercase rounded-lg text-slate-400";
+            } else if (mode === 'register') {
+                register.classList.remove('hidden');
+                tabR.className = "flex-1 py-2 text-xs font-black uppercase rounded-lg bg-amber-500 text-slate-900";
+                tabL.className = "flex-1 py-2 text-xs font-black uppercase rounded-lg text-slate-400";
+            } else if (mode === 'forgot') {
+                forgot.classList.remove('hidden');
+                document.getElementById('forgot-step-1').classList.remove('hidden');
+                document.getElementById('forgot-step-2').classList.add('hidden');
+                document.getElementById('forgot-step-3').classList.add('hidden');
+            }
         }
 
+        // DATABASE GİRİŞ İŞLEMİ (İsim & Şifre)
         async function handleLogin() {
-            const { auth, signInWithEmailAndPassword } = window.firebase;
-            const email = document.getElementById('login-email').value;
+            const { db, appId, getDoc, doc, signInAnonymously, auth } = window.firebase;
+            const name = document.getElementById('login-username').value.trim();
             const pass = document.getElementById('login-pass').value;
+            const btn = document.getElementById('btn-login');
+
+            if(!name || !pass) return showToast("Lütfen tüm alanları doldurun.", "error");
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+            
             try {
-                await signInWithEmailAndPassword(auth, email, pass);
+                // RULE 1: /artifacts/{appId}/public/data/user_credentials/{username}
+                const sanitizedName = name.toLowerCase().replace(/\s/g, '_');
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'user_credentials', sanitizedName);
+                const userSnap = await getDoc(userRef);
+
+                if (userSnap.exists() && userSnap.data().password === pass) {
+                    await signInAnonymously(auth);
+                    localStorage.setItem('akademi_pro_username', name);
+                    showToast(`Hoş geldin, ${name}!`);
+                } else {
+                    throw new Error("Hatalı giriş.");
+                }
             } catch (err) {
-                alert("Giriş hatası: " + err.message);
+                showToast("Giriş yapılamadı: Bilgilerinizi kontrol edin.", "error");
+                btn.disabled = false;
+                btn.innerHTML = '<span>GİRİŞ YAP</span>';
             }
         }
 
+        // KAYIT İŞLEMİ
         async function handleRegister() {
-            const { auth, db, appId, createUserWithEmailAndPassword, doc, setDoc } = window.firebase;
-            const name = document.getElementById('reg-name').value;
-            const email = document.getElementById('reg-email').value;
+            const { db, appId, setDoc, doc, signInAnonymously, auth } = window.firebase;
+            const name = document.getElementById('reg-name').value.trim();
             const pass = document.getElementById('reg-pass').value;
+            const q = document.getElementById('reg-question').value;
+            const a = document.getElementById('reg-answer').value.trim();
+            const btn = document.getElementById('btn-register');
+
+            if(!name || !pass || !q || !a) return showToast("Tüm alanlar zorunludur!", "error");
+            if(pass.length < 6) return showToast("Şifre en az 6 karakter olmalı.", "error");
+
+            btn.disabled = true;
             try {
-                const cred = await createUserWithEmailAndPassword(auth, email, pass);
-                await setDoc(doc(db, 'artifacts', appId, 'users', cred.user.uid, 'profile', 'info'), {
+                const sanitizedName = name.toLowerCase().replace(/\s/g, '_');
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'user_credentials', sanitizedName);
+                const checkSnap = await window.firebase.getDoc(userRef);
+                
+                if(checkSnap.exists()) {
+                    btn.disabled = false;
+                    return showToast("Bu isimle kayıtlı bir kullanıcı zaten var.", "error");
+                }
+
+                await setDoc(userRef, {
                     displayName: name,
-                    email: email,
-                    joinedAt: new Date().toISOString()
+                    password: pass,
+                    securityQuestion: q,
+                    securityAnswer: a.toLowerCase(),
+                    createdAt: new Date().toISOString()
                 });
+
+                await signInAnonymously(auth);
+                localStorage.setItem('akademi_pro_username', name);
+                showToast("Hesabın başarıyla oluşturuldu!");
             } catch (err) {
-                alert("Kayıt hatası: " + err.message);
+                showToast("Kayıt hatası oluştu.", "error");
+                btn.disabled = false;
             }
+        }
+
+        // ŞİFRE SIFIRLAMA MANTIĞI
+        let currentForgotUser = null;
+        async function handleForgotFetch() {
+            const name = document.getElementById('forgot-name').value.trim();
+            if(!name) return showToast("İsim girin.", "error");
+
+            const { db, appId, doc, getDoc } = window.firebase;
+            const sanitizedName = name.toLowerCase().replace(/\s/g, '_');
+            const userSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'user_credentials', sanitizedName));
+
+            if(userSnap.exists()) {
+                currentForgotUser = sanitizedName;
+                document.getElementById('forgot-question-display').innerText = userSnap.data().securityQuestion;
+                document.getElementById('forgot-step-1').classList.add('hidden');
+                document.getElementById('forgot-step-2').classList.remove('hidden');
+            } else {
+                showToast("Kullanıcı bulunamadı.", "error");
+            }
+        }
+
+        async function handleForgotVerify() {
+            const ans = document.getElementById('forgot-answer').value.trim().toLowerCase();
+            const { db, appId, doc, getDoc } = window.firebase;
+            const userSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'user_credentials', currentForgotUser));
+
+            if(userSnap.data().securityAnswer === ans) {
+                document.getElementById('forgot-step-2').classList.add('hidden');
+                document.getElementById('forgot-step-3').classList.remove('hidden');
+            } else {
+                showToast("Cevap yanlış!", "error");
+            }
+        }
+
+        async function handleForgotReset() {
+            const newPass = document.getElementById('forgot-new-pass').value;
+            if(newPass.length < 6) return showToast("En az 6 karakter.", "error");
+
+            const { db, appId, doc, updateDoc } = window.firebase;
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'user_credentials', currentForgotUser), { password: newPass });
+            showToast("Şifre güncellendi!");
+            toggleAuth('login');
         }
 
         async function handleGuestLogin() {
             const { auth, signInAnonymously } = window.firebase;
             try {
                 await signInAnonymously(auth);
-            } catch (err) { alert(err.message); }
+                localStorage.setItem('akademi_pro_username', 'Misafir');
+                showToast("Misafir olarak giriş yapıldı.");
+            } catch (err) { showToast("Giriş hatası.", "error"); }
         }
 
         async function handleLogout() {
-            if (confirm("Çıkış yapmak istediğine emin misin?")) {
-                await window.firebase.signOut(window.firebase.auth);
-                location.reload();
-            }
+            await window.firebase.signOut(window.firebase.auth);
+            localStorage.removeItem('akademi_pro_username');
+            location.reload();
         }
 
-        // DATABASE SYNC FUNCTIONS
-        async function syncUserData(user) {
-            if (!user) return;
-            const { db, appId, doc, getDoc, collection, onSnapshot } = window.firebase;
-            
-            try {
-                // 1. Fetch Profile Info
-                const profileRef = doc(db, 'artifacts', appId, 'users', user.uid, 'profile', 'info');
-                const profileSnap = await getDoc(profileRef);
-                if (profileSnap.exists()) {
-                    document.getElementById('user-display-name').innerText = profileSnap.data().displayName;
-                    document.getElementById('user-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${profileSnap.data().displayName}`;
-                } else {
-                    document.getElementById('user-display-name').innerText = user.email || "Misafir Öğrenci";
-                }
-
-                // 2. Load Notes
-                const noteRef = doc(db, 'artifacts', appId, 'users', user.uid, 'data', 'quickNote');
-                const noteSnap = await getDoc(noteRef);
-                if (noteSnap.exists()) {
-                    document.getElementById('quick-note').value = noteSnap.data().content;
-                }
-
-                // 3. Sync Todos (Live)
-                if (unsubscribeTodos) unsubscribeTodos();
-                const todosRef = collection(db, 'artifacts', appId, 'users', user.uid, 'todos');
-                unsubscribeTodos = onSnapshot(todosRef, (snapshot) => {
-                    const list = document.getElementById('todo-list');
-                    list.innerHTML = "";
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        const div = document.createElement('div');
-                        div.className = "flex gap-4 items-center bg-slate-800/40 p-4 rounded-2xl border border-slate-700 animate-pop";
-                        div.innerHTML = `
-                            <input type="checkbox" ${data.completed ? 'checked' : ''} onchange="toggleTodo('${doc.id}', this.checked)" class="w-5 h-5 accent-amber-500">
-                            <span class="font-bold flex-1 ${data.completed ? 'line-through text-slate-500' : ''}">${data.text}</span>
-                            <button onclick="deleteTodo('${doc.id}')" class="text-slate-500 hover:text-rose-500"><i class="fas fa-trash"></i></button>
-                        `;
-                        list.appendChild(div);
-                    });
-                }, (err) => console.error("Firestore sync error:", err));
-            } catch (err) {
-                console.error("User data sync error:", err);
-            }
-        }
-
-        async function saveNote() {
-            if (!currentUser) return;
-            const btn = document.getElementById('btn-save-note');
-            btn.innerText = "Kaydediliyor...";
-            const { db, appId, doc, setDoc } = window.firebase;
-            const note = document.getElementById('quick-note').value;
-            try {
-                await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'data', 'quickNote'), {
-                    content: note,
-                    updatedAt: new Date().toISOString()
-                });
-                btn.innerText = "Kaydedildi!";
-                setTimeout(() => btn.innerText = "Buluta Kaydet", 2000);
-            } catch (err) { alert("Hata: " + err.message); }
-        }
-
-        async function addTask() {
-            if (!currentUser) return;
-            const input = document.getElementById('new-task');
-            if (!input.value) return;
-            const { db, appId, collection, addDoc } = window.firebase;
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'todos'), {
-                    text: input.value,
-                    completed: false,
-                    createdAt: new Date().toISOString()
-                });
-                input.value = "";
-            } catch (err) { alert(err.message); }
-        }
-
-        async function toggleTodo(id, completed) {
-            if (!currentUser) return;
-            const { db, appId, doc, updateDoc } = window.firebase;
-            await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'todos', id), { completed });
-        }
-
-        async function deleteTodo(id) {
-            if (!currentUser) return;
-            const { db, appId, doc, deleteDoc } = window.firebase;
-            await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'todos', id));
-        }
-
-        // NAVIGATION & UI
-        function switchView(viewId) {
-            document.querySelectorAll('#view-content > section').forEach(s => s.classList.add('hidden'));
-            document.getElementById(`view-${viewId}`).classList.remove('hidden');
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            const nav = document.getElementById(`nav-${viewId}`);
-            if(nav) nav.classList.add('active');
-            if(viewId === 'quiz') startQuiz();
-            if(viewId === 'maps') setTimeout(initMap, 200);
-        }
-
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
-
-        // WAIT FOR FIREBASE INIT
+        // UYGULAMA BAŞLATMA VE AUTH TAKİBİ
         const checkFirebase = setInterval(() => {
             if (window.firebase && window.firebase.auth) {
                 clearInterval(checkFirebase);
-                initAuthListener();
+                const { auth, onAuthStateChanged } = window.firebase;
+                
+                onAuthStateChanged(auth, (user) => {
+                    const savedName = localStorage.getItem('akademi_pro_username');
+                    if (user && savedName) {
+                        currentUser = user;
+                        document.getElementById('auth-screen').classList.add('hidden');
+                        document.getElementById('sidebar').classList.remove('hidden');
+                        document.getElementById('main-content').classList.remove('hidden');
+                        document.getElementById('main-content').classList.add('flex');
+                        
+                        document.getElementById('user-display-name').innerText = savedName;
+                        document.getElementById('user-avatar').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${savedName}`;
+                        document.getElementById('user-account-type').innerText = savedName === 'Misafir' ? "MISAFIR" : "ÜYE ÖĞRENCI";
+                    } else {
+                        currentUser = null;
+                        document.getElementById('auth-screen').classList.remove('hidden');
+                        document.getElementById('sidebar').classList.add('hidden');
+                        document.getElementById('main-content').classList.add('hidden');
+                    }
+                });
             }
         }, 100);
 
-        async function initAuthListener() {
-            const { auth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } = window.firebase;
-            
-            // Fixed: Authentication MUST happen before any Firestore queries.
-            const performInitialSignIn = async () => {
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else if (!auth.currentUser) {
-                        await signInAnonymously(auth);
-                    }
-                } catch (err) {
-                    console.error("Initial sign in error:", err);
-                    if (!auth.currentUser) await signInAnonymously(auth);
-                }
-            };
-
-            await performInitialSignIn();
-
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUser = user;
-                    document.getElementById('auth-screen').classList.add('hidden');
-                    document.getElementById('sidebar').classList.remove('hidden');
-                    document.getElementById('main-content').classList.remove('hidden');
-                    document.getElementById('main-content').classList.add('flex');
-                    syncUserData(user);
-                    initDashboard();
-                } else {
-                    currentUser = null;
-                    document.getElementById('auth-screen').classList.remove('hidden');
-                    document.getElementById('sidebar').classList.add('hidden');
-                    document.getElementById('main-content').classList.add('hidden');
-                }
-            });
+        function switchView(id) {
+            document.querySelectorAll('#view-content > section').forEach(s => s.classList.add('hidden'));
+            const target = document.getElementById(`view-${id}`);
+            if(target) target.classList.remove('hidden');
+            document.getElementById('view-title').innerText = id === 'dashboard' ? 'Analiz Merkezi' : (id === 'planner' ? 'Odak Modu' : 'Ders Notları');
+            if(window.innerWidth < 1024) toggleSidebar();
         }
 
-        function initDashboard() {
-            const ctx = document.getElementById('performanceChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
-                    datasets: [{
-                        label: 'Net Ortalaması',
-                        data: [72, 75, 78, 82, 80, 85, 92],
-                        borderColor: '#f59e0b',
-                        tension: 0.4, fill: true, backgroundColor: 'rgba(245, 158, 11, 0.1)'
-                    }]
-                },
-                options: { plugins: { legend: { display: false } } }
-            });
-            document.getElementById('countdown').innerText = "142 GÜN";
-        }
-
-        function updateTimerDisplay() {
-            const m = Math.floor(timerSeconds / 60);
-            const s = timerSeconds % 60;
-            document.getElementById('timer-display').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-        }
-        function toggleTimer() {
-            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; document.getElementById('timer-btn').innerText = "Devam Et"; }
-            else { timerInterval = setInterval(() => { if (timerSeconds > 0) { timerSeconds--; updateTimerDisplay(); } else clearInterval(timerInterval); }, 1000); document.getElementById('timer-btn').innerText = "Durdur"; }
-        }
-        function resetTimer() { clearInterval(timerInterval); timerInterval = null; timerSeconds = 1500; updateTimerDisplay(); }
-
-        async function askAI() {
-            const input = document.getElementById('ai-input');
-            const box = document.getElementById('ai-chat-box');
-            if(!input.value) return;
-            box.innerHTML += `<div class="bubble bubble-user">${input.value}</div>`;
-            const q = input.value; input.value = "";
-            setTimeout(() => { box.innerHTML += `<div class="bubble bubble-ai">Bu konuda sana yardımcı olabilirim. Detaylı bilgi için ders notlarına bakabilir veya konuyu spesifikleştirebilirsin.</div>`; box.scrollTop = box.scrollHeight; }, 1000);
-        }
-
-        let mapInstance;
-        function initMap() {
-            if (!mapInstance) {
-                mapInstance = L.map('main-map').setView([39.0, 35.0], 6);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(mapInstance);
-            }
-        }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
     </script>
 </body>
 </html>
